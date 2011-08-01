@@ -1,0 +1,20 @@
+Metadata-Version: 1.0
+Name: Scio
+Version: 0.9.1
+Summary: Scio is a humane SOAP client
+Home-page: http://bitbucket.org/leapfrogdevelopment/scio/overview
+Author: UNKNOWN
+Author-email: oss@leapfrogdevelopment.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.4
+Classifier: Programming Language :: Python :: 2.5
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Topic :: Software Development :: Object Brokering
