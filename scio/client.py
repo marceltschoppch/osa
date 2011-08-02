@@ -263,9 +263,10 @@ class MethodCall(object):
     def __call__(self, *arg, **kw):
         request = self.format_request(*arg, **kw)
         try:
-            response = self.send_request(request)
-            log.debug("Response: %s", response)
-            return response
+            return self.send_request(request)
+            #boz: remove logging of potentially large pieces
+            #log.debug("Response: %s", response)
+            #return response
         except HTTPError, e:
             if e.code in (202, 204):
                 return self.client.handle_response(self.method, None)
@@ -275,7 +276,9 @@ class MethodCall(object):
     def format_request(self, *arg, **kw):
         request = self.client.envelope(self.method.input(*arg, **kw))
         req_xml = etree.tostring(request)
-        log.debug("Request: %s", req_xml)
+        del request #boz ??
+        #boz: remove logging of potentially large pieces
+        #log.debug("Request: %s", req_xml)
         return Request(self.method.location, req_xml, self.headers())
 
     def send_request(self, request):
@@ -474,6 +477,25 @@ class DecimalType(SimpleType, Decimal):
 
 class FloatType(SimpleType, float):
     xsi_type = (NS_XSD, 'float')
+    #boz: to eliminate bug with repr/str conversion for float numbers
+    def toxml(self, tag=None, namespace=None, nsmap=None, empty=False):
+        if tag is None:
+            tag = self._tag
+        if namespace is None:
+            namespace = self._namespace
+        if nsmap is None:
+            nsmap = self._nsmap
+        if tag is None or namespace is None or nsmap is None:
+            raise ValueError("%s has no associated xml context" % self)
+        try:
+            value = unicode(repr(self))
+        except TypeError:
+            value = None
+        tag = '{%s}%s' % (namespace, tag)
+        e = etree.Element(tag, nsmap=nsmap)
+        if value is not None and value != u'':
+            e.text = value
+        return e
 
 
 class DateTimeType(SimpleType, datetime):
@@ -932,6 +954,7 @@ class AttributeDescriptor(object):
         key = '_%s_' % self.name
 
         if isinstance(value, (list, tuple)):
+            stop
             new = []
             for item in value:
                 if not isinstance(item, self.type):
