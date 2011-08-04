@@ -1,5 +1,5 @@
 """
-    Some common soap constants.
+    Some common soap stuff.
 """
 
 # soap contstants
@@ -23,3 +23,40 @@ SOAPNS = {
              'wsdl'             : NS_WSDL,
              'xsi'              : NS_XSI,
              'xsd'              : NS_XSD }
+
+def get_local_name(full_name):
+    """
+        Removes namespace part of the name.
+
+        In lxml namespacec can appear in 2 forms:
+            {full.namespace.com}name, and
+            prefix:name.
+        Both cases are handled correctly here.
+    """
+    full_name = full_name[full_name.find('}')+1:]
+    full_name = full_name[full_name.find(':')+1:]
+    return full_name
+
+def get_local_type(xmltype):
+    """
+        Simplifies types names, e.g. XMLInteger is
+        presented as int.
+
+        This is used for nice printing only.
+    """
+    if xmltype == "XMLBoolean":
+        return 'bool'
+    elif xmltype == "XMLDecimal":
+        return 'decimal'
+    elif xmltype == "XMLInteger":
+        return 'int'
+    elif xmltype == "XMLDouble":
+        return 'float'
+    elif xmltype == "XMLString":
+        return 'str'
+    elif xmltype == "XMLDate":
+        return 'date'
+    elif xmltype == "XMLDateTime":
+        return 'datetime'
+    else:
+        return xmltype

@@ -28,8 +28,4 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from scio.client import Client, Fault, Method, NotSOAP
-
-__all__ = ['Client', 'Fault', 'Method', 'NotSOAP']
-
-
+from client import Client

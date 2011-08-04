@@ -1,9 +1,84 @@
+"""
+    Python classes corresponding to XML schema.
+"""
 from exceptions import *
 from soap import *
 from lxml import etree
+#import xml.etree.cElementTree as etree
 from decimal import Decimal
 from datetime import date, datetime, time
-from urllib2 import urlopen, Request, HTTPError
+
+def toinit(self, deep = False):
+    """
+        Nice init for complex types.
+
+        All obligatory (nonnillable) children can also be created.
+
+        Parameters
+        ----------
+        deep : bool, optional, defaule False
+            If True all non-nillable children are created, otherwise
+            they are simplty None. The latter is used when
+            converting response from XML to Python.
+    """
+    if not(deep):
+        return
+    for child in self._children:
+        if child['min'] == 0:
+            continue
+        val_type = child['type']
+        val = None
+        if getattr(val_type, "_children", None) is not None:
+            val = val_type(deep=deep)
+        else:
+            val = val_type()
+        if child['max'] > 1:
+            #'unbounded' > 1
+            val = [val,]
+        setattr(self, child['name'], val)
+
+def tostr(self):
+    """
+        Nice printing facility for complex types.
+    """
+    children = ''
+    for child in self._children:
+        child_name = child['name']
+        array = ''
+        if child['max']>1:
+             # 'unbounded'>1
+             array = '[]'
+        child_value = getattr(self, child_name, None)
+        many = False
+        if len(array) and isinstance(child_value, (list, tuple)):
+            many = True
+        shift = len(child_name) + len(array) + 7 # 4 comes from tab
+        if many:
+            shift = shift + 1
+            tmp = child_value
+            stop = len(child_value)
+            after = '\n]'
+            if stop > 10:
+                stop = 10
+                after = '\n...' + after
+            child_value = ''
+            for val in tmp:
+                child_value = child_value + ',\n%s' %str(val)
+            child_value = '[\n' + child_value[2:] + after
+        else:
+            child_value = str(child_value)
+        child_value = child_value.replace('\n', '\n%s' %(' '*shift))
+        descr = '    %s%s = %s' %(child_name, array, child_value)
+        children = children + '\n%s' %descr
+    res = '(%s){%s\n}' %(self.__class__.__name__, children)
+
+    return res
+
+def torepr(self):
+    """
+        Nice printing facility for complex types.
+    """
+    return tostr(self)
 
 class XMLType(object):
     """
@@ -12,6 +87,8 @@ class XMLType(object):
         It defines basic functions to_xml and from_xml.
     """
     _namespace = ""
+
+
     def check_constraints(self, n, min_occurs, max_occurs):
         """
             Performs constraints checking.
@@ -129,6 +206,9 @@ class XMLType(object):
                 else:
                     setattr(self, name, subvalue)
 
+        #now all children were processed, so remove them to save memory
+        element.clear()
+
         return self
 
 class ComplexTypeMeta(type):
@@ -167,6 +247,11 @@ class ComplexTypeMeta(type):
             clsDict[attr['name']] = None
         #propagate documentation
         clsDict["__doc__"] = attributes.get("__doc__", None)
+        #add nice printing
+        clsDict["__str__"] = tostr
+        clsDict["__repr__"] = torepr
+        #add complex init
+        clsDict["__init__"] = toinit
 
         #extend children list with that of base classes
         new = []
@@ -240,16 +325,25 @@ class XMLBoolean(XMLType, str):
         return None
 
 class XMLAny(XMLType, str):
+    _types = {} #dict of known types
     def to_xml(self, parent, name):
         value = etree.fromstring(self)
         element = etree.SubElement(parent, name)
         element.append(value)
 
     def from_xml(self, element):
-        children = element.getchildren()
-        if children:
-            return children[0]
-        return None
+        #try to find types
+        type = element.get('{http://www.w3.org/2001/XMLSchema-instance}type',
+                                                                        None)
+        if type is None:
+            return element
+        type = get_local_name(type)
+        type_class = self._types.get(type, None)
+        if type_class is not None:
+            res = type_class()
+            return res.from_xml(element)
+        else:
+            return element
 
 class XMLDecimal(XMLType, Decimal):
     def to_xml(self, parent, name):
@@ -295,178 +389,3 @@ class XMLDateTime(XMLType):
     def from_xml(self, element):
         return datetime.strptime('2011-08-02T17:00:01.000122',
                                         '%Y-%m-%dT%H:%M:%S.%f')
-
-class Message(object):
-    """
-        Message for input and output of service operations.
-
-        Messages perform conversion of Python to xml and backwards
-        of the calls and returns.
-
-        Parameters
-        ----------
-        tag : str
-            Name of the message.
-        namespafe : str
-            Namespace of the message.
-        nsmap : dict
-            Map of namespace prefixes.
-        parts : list
-            List of message parts in the form
-            (part name, part type class).
-        style : str
-            Operation style document/rpc.
-        literal : bool
-            True = literal, False = encoded.
-    """
-    def __init__(self, tag, namespace, nsmap, parts, style, literal):
-        self.tag = tag
-        self.namespace = namespace
-        self.nsmap = nsmap
-        self.parts = parts
-        self.style = style
-        self.literal = literal
-
-    def to_xml(self, *arg, **kw):
-        """
-            Convert from Python into xml message.
-        """
-        if self.style != "document" or not(self.literal):
-            raise RuntimeError(
-                "Only document/literal are supported. Improve Message class!")
-
-        p = self.parts[0][1]() #encoding instance
-
-        #wrapped message is supplied
-        if len(arg) == 1 and isinstance(arg[0], self.parts[0][1]):
-            for child in p._children:
-                setattr(p, child['name'], getattr(arg[0], child['name'], None))
-        else:
-            #reconstruct wrapper from expanded input
-            counter = 0
-            for child in p._children:
-                name = child["name"]
-                #first try keyword
-                val = kw.get(name, None)
-                if val is None: #not keyword
-                    if counter < len(arg):
-                        #assume this is positional argument
-                        val = arg[counter]
-                        counter = counter + 1
-                if val is None: #check if nillable
-                    if child["min"] == 0:
-                        continue
-                    else:
-                        raise ValueError(\
-                                "Non-nillable parameter %s is not present"\
-                                                                    %name)
-                setattr(p, name, val)
-
-        p.to_xml(kw["_body"], "{%s}%s" %(self.namespace, self.tag))
-
-    def from_xml(self, body, header = None):
-        """
-            Convert from xml message to Python.
-        """
-        if self.style != "document" or not(self.literal):
-            raise RuntimeError(
-                "Only document/literal are supported. Improve Message class.")
-
-        p = self.parts[0][1]() #decoding instance
-
-        res = p.from_xml(body)
-
-        #for wrapped doc style (the only one implemented) we now, that
-        #wrapper has only one child, get it
-        if len(p._children) == 1:
-            return getattr(res, p._children[0]["name"], None)
-        else:
-            return res
-
-class Method(object):
-    """
-        Definition of a single SOAP method, including the location, action, name
-        and input and output classes.
-
-        TODO: add a useful repr
-
-        This is a copy from Scio.
-
-        self.input - input message - to convert from Python to xml
-        self.output - output message - to convert from xml to Python
-    """
-    def __init__(self, location, name, action, input, output, doc=None):
-        self.location = location
-        self.name = name
-        self.action = action
-        self.input = input
-        self.output = output
-        self.__doc__ = doc
-
-    def __call__(self, *arg, **kw):
-        """
-            Process rpc-call.
-        """
-        #create soap-wrap around our message
-        env = etree.Element('{%s}Envelope' % SOAPNS['soap-env'], nsmap=SOAPNS)
-        header = etree.SubElement(env, '{%s}Header' % SOAPNS['soap-env'],
-                                                                 nsmap=SOAPNS)
-        body = etree.SubElement(env, '{%s}Body' % SOAPNS['soap-env'],
-                                                                 nsmap=SOAPNS)
-
-        #compose call message - convert all parameters and encode the call
-        kw["_body"] = body
-        self.input.to_xml(*arg, **kw)
-
-        text_msg = etree.tostring(env) #message to send
-        del env
-
-        #http stuff
-        request = Request(self.location, text_msg,
-                                {'Content-Type': 'text/xml',
-                                'SOAPAction': self.action})
-
-        #real rpc
-        try:
-            response = urlopen(request).read()
-        except HTTPError, e:
-            if e.code in (202, 204):#empty returns
-                pass
-                #return self.client.handle_response(self.method, None)
-            else:
-                pass
-                #return self.client.handle_error(self.method, e)
-            raise
-
-        #string to xml
-        xml = etree.fromstring(response)
-        del response
-
-        #find soap body
-        body = xml.find(SOAP_BODY)
-        if body is None:
-            raise NotSOAP("No SOAP body found in response", response)
-        fault = body.find(SOAP_FAULT)
-        if fault is not None:
-            code = fault.find('faultcode')
-            if code is not None:
-                code = code.text
-            string = fault.find('faultstring')
-            if string is not None:
-                string = string.text
-            detail = fault.find('detail')
-            if detail is not None:
-                detail = detail.text
-            raise RuntimeError("SOAP Fault %s:%s <%s> %s%s"\
-                    %(method.location, method.name, code, string, detail))
-        body = body[0] # hacky? get the first real element
-
-        return self.output.from_xml(body)
-
-def get_local_name(full_name):
-    """
-        Removes namespace part of the name.
-    """
-    full_name = full_name[full_name.find('}')+1:]
-    full_name = full_name[full_name.find(':')+1:]
-    return full_name

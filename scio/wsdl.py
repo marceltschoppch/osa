@@ -1,6 +1,12 @@
-from alltypes import *
+"""
+    Conversion of WSDL documents into Python.
+"""
+from xmltypes import *
+from methods import *
+from soap import *
 import urllib2
 from lxml import etree
+#import xml.etree.cElementTree as etree
 
 #primitive types mapping xml -> python
 _primmap = { 'anyType'          : XMLAny,
@@ -70,7 +76,68 @@ class WSDLParser(object):
         self.xsd = backmap['http://www.w3.org/2001/XMLSchema']
         self.wsdl_ns = backmap['http://schemas.xmlsoap.org/wsdl/']
 
-    def collect_children(self, element, children, types):
+    def get_service_names(self):
+        """
+            Returns names of services found in WSDL.
+
+            This is from wsdl:service section.
+
+            Returns
+            -------
+            out : list of str
+                Names.
+        """
+        services = self.wsdl.xpath('//%s:service' % self.wsdl_ns,
+                                                      namespaces=self.nsmap)
+        res = []
+        for service in services:
+            name = service.get("name", None)
+            if name is not None:
+                res.append(name)
+        return res
+
+    def get_type_name(self, element):
+        """
+            Get type name from XML element.
+
+            Parameters
+            ----------
+            element : etree.Element
+                XML description of the type.
+        """
+        name = element.get('name', None)
+        if name is None:
+            # find name in parent 'element'
+            parent = element.getparent()
+            if parent.tag == "{%s}element" %self.nsmap[self.xsd]:
+                name = parent.get('name', None)
+        return name
+
+    def create_named_class(self, name, types, allelements):
+        """
+            Creates a single named type.
+
+            Function searches through all available elements to find one
+            suitable. This is useful if a type is present as a child before
+            it is present in the list.
+
+            Parameters
+            ----------
+            name : str
+                Name of the type.
+            types : dict
+                Map of known types.
+            allelements : list of etree.Element instance
+                List of all types found in WSDL. It is used to create
+                related classes in place.
+        """
+        for element in allelements:
+            el_name = self.get_type_name(element)
+            if el_name == name:
+                self.create_class(element, el_name, types, allelements)
+                break
+
+    def collect_children(self, element, children, types, allelements):
         """
             Collect information about children (xml sequence, etc.)
 
@@ -82,6 +149,9 @@ class WSDLParser(object):
                 Information is appended to this list.
             types : dict
                 Known types map.
+            allelements : list of etree.Element instance
+                List of all types found in WSDL. It is used to create
+                related classes in place.
         """
         for subel in element:
             #iterate over sequence, do not consider in place defs
@@ -92,8 +162,10 @@ class WSDLParser(object):
                                                          %subsub.tag)
             ch = types.get(type, None)
             if ch is None:
-                raise ValueError("Child %s class is not registered yet"\
-                                                                  %type)
+                self.create_named_class(type, types, allelements)
+            ch = types.get(type, None)
+            if ch is None:
+                raise ValueError("Child %s class is not found " %type)
             child_name = subel.get('name', 'unknown')
             minOccurs = int(subel.get('minOccurs', 1))
             maxOccurs = subel.get('maxOccurs', 1)
@@ -104,7 +176,7 @@ class WSDLParser(object):
                              'min' : minOccurs,
                              'max' : maxOccurs})
 
-    def create_class(self, element, name, types):
+    def create_class(self, element, name, types, allelements):
         """
             Create new type from xml description.
 
@@ -116,6 +188,9 @@ class WSDLParser(object):
                 Name of the new class.
             types : dict
                 Map of already known types.
+            allelements : list of etree.Element instance
+                List of all types found in WSDL. It is used to create
+                related classes in place.
         """
         doc = None
         children = []
@@ -127,7 +202,7 @@ class WSDLParser(object):
                              "{%s}all" %self.nsmap[self.xsd],
                              "{%s}choice" %self.nsmap[self.xsd]):
                 #add children - arguments of new class
-                self.collect_children(subel, children, types)
+                self.collect_children(subel, children, types, allelements)
 
             elif subel.tag == "{%s}complexContent" %self.nsmap[self.xsd]:
                 #base class
@@ -136,14 +211,16 @@ class WSDLParser(object):
                     base_name = get_local_name(subel.get("base", None))
                     b = types.get(base_name, None)
                     if b is None:
-                        raise ValueError("Base %s class is not registered yet"\
-                                                                     %base_name)
+                        self.create_named_class(base_name, types, allelements)
+                    b = types.get(base_name, None)
+                    if b is None:
+                        raise ValueError("Base %s class is not found" %base_name)
                     base.append(b)
                 for subsub in subel:
                     if subsub.tag in ("{%s}sequence" %self.nsmap[self.xsd],
                                       "{%s}all" %self.nsmap[self.xsd],
                                       "{%s}choice" %self.nsmap[self.xsd]):
-                        self.collect_children(subsub, children, types)
+                        self.collect_children(subsub, children, types, allelements)
             elif subel.tag == "{%s}annotation" %self.nsmap[self.xsd]:
                 if len(subel) and\
                    subel[0].tag == "{%s}documentation" %self.nsmap[self.xsd]:
@@ -156,13 +233,20 @@ class WSDLParser(object):
             types[name] = cls
 
 
-    def get_types(self):
+    def get_types(self, initialmap):
         """
             Constructs a map of all types defined in the document.
 
             At the moment simple types are not processed at all!
-            Only complex types are considered. If element, attribute
+            Only complex types are considered. If attribute
             or what so ever are encountered an exception if fired.
+
+            Parameters
+            ----------
+            initialmap : dict
+                Initial map of types. Usually it will be _primmap.
+                This is present here so that different services
+                can create own types of XMLAny.
 
             Returns
             -------
@@ -173,19 +257,14 @@ class WSDLParser(object):
         types = self.wsdl.xpath('//%s:complexType|//%s:simpleType' %
                                 (self.xsd, self.xsd), namespaces=self.nsmap)
 
-        res = _primmap.copy() #types container
+        res = initialmap.copy() #types container
         #iterate over the found types and fill in the container
-        #I take a simplified view that the types are ordered,
-        #i.e. a type can use types that are located before it.
+        # If an element used types placed later in the document, it will
+        #created in place when calling create_class.
         for t in types:
 
             #get name of the type
-            name = t.get('name', None)
-            if name is None:
-                # find name in parent 'element'
-                parent = t.getparent()
-                if parent.tag == "{%s}element" %self.nsmap[self.xsd]:
-                    name = parent.get('name', None)
+            name = self.get_type_name(t)
             if name is None:
                 continue
 
@@ -198,7 +277,7 @@ class WSDLParser(object):
                 raise ValueError("Uknown simple type %s" %name)
 
             #handle complex type, this also registers new class to result
-            self.create_class(t, name, res)
+            self.create_class(t, name, res, types)
 
         return res
 
