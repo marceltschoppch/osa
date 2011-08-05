@@ -1,0 +1,9 @@
+Tests for the library.
+
+Folder serializers - contains tests for simple and complex XML types.
+These test are standalone and do not require any service.
+
+The following services, however, require a simple HelloWorldService to
+be available.
+test_wsdl - test WSDL to Python conversion
+test_client - test method calling

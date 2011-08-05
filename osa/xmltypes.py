@@ -383,5 +383,7 @@ class XMLDateTime(XMLType):
         element.text = self.value.isoformat('T')
 
     def from_xml(self, element):
-        return datetime.strptime('2011-08-02T17:00:01.000122',
-                                        '%Y-%m-%dT%H:%M:%S.%f')
+        if not(element.text):
+            return None
+        text = element.text
+        return datetime.strptime(text, '%Y-%m-%dT%H:%M:%S.%f')
