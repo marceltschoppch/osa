@@ -1,12 +1,11 @@
 """
     Python classes corresponding to XML schema.
 """
-from exceptions import *
-from soap import *
-from lxml import etree
-#import xml.etree.cElementTree as etree
+from exceptions import ValueError, RuntimeError
+import xml.etree.cElementTree as etree
 from decimal import Decimal
 from datetime import date, datetime, time
+from soap import *
 
 def toinit(self, deep = False):
     """
@@ -65,20 +64,17 @@ def tostr(self):
             for val in tmp:
                 child_value = child_value + ',\n%s' %str(val)
             child_value = '[\n' + child_value[2:] + after
-        else:
+        elif child_value is not None:
             child_value = str(child_value)
+        else:
+            child_value = "%s (%s)" %(str(None),
+                                    get_local_type(child['type'].__name__))
         child_value = child_value.replace('\n', '\n%s' %(' '*shift))
         descr = '    %s%s = %s' %(child_name, array, child_value)
         children = children + '\n%s' %descr
     res = '(%s){%s\n}' %(self.__class__.__name__, children)
 
     return res
-
-def torepr(self):
-    """
-        Nice printing facility for complex types.
-    """
-    return tostr(self)
 
 class XMLType(object):
     """
@@ -109,7 +105,7 @@ class XMLType(object):
         """
         if n<min_occurs:
             raise ValueError("Number of values is less than min_occurs")
-        if max_occurs != 'unbounded' and n > max_occurs:
+        if n > max_occurs:
             raise ValueError("Number of values is more than max_occurs")
 
     def to_xml(self, parent, name):
@@ -121,7 +117,7 @@ class XMLType(object):
 
             Parameters
             ----------
-            parent : lxml.etree.Element
+            parent : etree.Element
                 Parent xml element to append this child to.
             name : str
                 Full qualified (with namespace) name of this element.
@@ -130,7 +126,10 @@ class XMLType(object):
         element = etree.SubElement(parent, name)
 
         #namespace for future naming
-        ns = "{" + self._namespace + "}"
+        if self._namespace:
+            ns = "{" + self._namespace + "}"
+        else:
+            ns = ''
         #add all children to the current level
         #note that children include also base classes, as they are propagated by
         #the metaclass below
@@ -169,7 +168,7 @@ class XMLType(object):
 
             Parameters
             ----------
-            element : lxml.etree.Element
+            element : etree.Element
                 Element to recover from.
         """
         #element is nill
@@ -182,11 +181,8 @@ class XMLType(object):
 
         for subel in element:
             name = get_local_name(subel.tag)
-            #check we have such an attribute
-            if name not in all_children_names:
-                raise ValueErro('does not have a "%s" member' % name)
-
             ind = all_children_names.index(name)
+
             #used for conversion. for primitive types we receive back built-ins
             inst = self._children[ind]['type']()
             subvalue = inst.from_xml(subel)
@@ -205,6 +201,7 @@ class XMLType(object):
                     current_value.append(subvalue)
                 else:
                     setattr(self, name, subvalue)
+            del name, ind, inst
 
         #now all children were processed, so remove them to save memory
         element.clear()
@@ -249,7 +246,7 @@ class ComplexTypeMeta(type):
         clsDict["__doc__"] = attributes.get("__doc__", None)
         #add nice printing
         clsDict["__str__"] = tostr
-        clsDict["__repr__"] = torepr
+        clsDict["__repr__"] = tostr
         #add complex init
         clsDict["__init__"] = toinit
 
@@ -333,8 +330,7 @@ class XMLAny(XMLType, str):
 
     def from_xml(self, element):
         #try to find types
-        type = element.get('{http://www.w3.org/2001/XMLSchema-instance}type',
-                                                                        None)
+        type = element.get('{%s}type' %NS_XSI, None)
         if type is None:
             return element
         type = get_local_name(type)

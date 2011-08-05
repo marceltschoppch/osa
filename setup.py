@@ -4,7 +4,7 @@ import sys
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
-License :: OSI Approved :: BSD License
+License :: LGPL
 Natural Language :: English
 Programming Language :: Python
 Programming Language :: Python :: 2.4
@@ -19,13 +19,12 @@ else:
     dateutil_version = '>=1.4,<1.5'
 
 setup(
-    name='Scio',
-    version='0.9.1',
-    author_email='oss@leapfrogdevelopment.com',
-    url='http://bitbucket.org/leapfrogdevelopment/scio/overview',
-    description='Scio is a humane SOAP client',
-    install_requires=['lxml>=2.2', 'python-dateutil%s' % dateutil_version],
-    tests_require=['nose>=1.0', 'Sphinx>=1.0'],
+    name='osa',
+    version='0.1',
+    author_email='boz@ipp.mpg.de',
+    description='osa is a fast/slim SOAP client.',
+    install_requires=['python-dateutil%s' % dateutil_version],
+    tests_require=['Sphinx>=1.0'],
     packages=find_packages(),
     classifiers=CLASSIFIERS,
     )

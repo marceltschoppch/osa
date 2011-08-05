@@ -95,6 +95,7 @@ class Client(object):
         #get all types - a dictionary
         types = parser.get_types(primmap)
         primmap['anyType']._types = types.copy()
+        del primmap
         #get all methods - a dictionary
         methods = parser.get_methods(types)
         #create dispatchers for types and methods
@@ -106,7 +107,9 @@ class Client(object):
         methods["__str__"] = str_for_containers
         methods["__repr__"] = str_for_containers
         self.types = type('TypesDispatcher', (), types)()
+        del types
         self.service = type('ServiceDispatcher', (), methods)()
+        del methods
         #get service names for printing
         self.names = parser.get_service_names()
 

@@ -5,8 +5,7 @@ from xmltypes import *
 from methods import *
 from soap import *
 import urllib2
-from lxml import etree
-#import xml.etree.cElementTree as etree
+import xml.etree.cElementTree as etree
 
 #primitive types mapping xml -> python
 _primmap = { 'anyType'          : XMLAny,
@@ -41,15 +40,11 @@ class WSDLParser(object):
             Initialize parser.
 
             The WSDL document is loaded and is converted into xml.
-            In addition namespace parsing is done.
 
             Initialized members:
             self.wsdl_url  - url of wsdl document
             self.wsdl - xml document read from wsdl_url (etree.Element)
-            self.nsmap - map of namespaces
             self.tns - target namespace
-            self.xsd - schema namespace prefix used in the current document
-            self.wsdl_ns - wsdl namespace prefix used here
 
             Parameters
             ----------
@@ -61,20 +56,10 @@ class WSDLParser(object):
         page_handler = urllib2.urlopen(wsdl_url)
         self.wsdl = etree.parse(page_handler).getroot()
         page_handler.close()
+        del page_handler
         self.wsdl_url = wsdl_url
-
-        #process namespaces
-        self.nsmap = SOAPNS.copy() # copy predifined global map
-        self.nsmap.update(self.wsdl.nsmap) # mapping from the current document
-        #correct default wsdl namespace prefix
-        if None in self.nsmap:
-            del self.nsmap[None]
         #get target namespace
         self.tns = self.wsdl.get('targetNamespace', None)
-        #reverse dictionary
-        backmap = dict(zip(self.nsmap.values(), self.nsmap.keys()))
-        self.xsd = backmap['http://www.w3.org/2001/XMLSchema']
-        self.wsdl_ns = backmap['http://schemas.xmlsoap.org/wsdl/']
 
     def get_service_names(self):
         """
@@ -87,8 +72,7 @@ class WSDLParser(object):
             out : list of str
                 Names.
         """
-        services = self.wsdl.xpath('//%s:service' % self.wsdl_ns,
-                                                      namespaces=self.nsmap)
+        services = self.wsdl.findall('.//{%s}service' % NS_WSDL)
         res = []
         for service in services:
             name = service.get("name", None)
@@ -107,10 +91,18 @@ class WSDLParser(object):
         """
         name = element.get('name', None)
         if name is None:
-            # find name in parent 'element'
-            parent = element.getparent()
-            if parent.tag == "{%s}element" %self.nsmap[self.xsd]:
-                name = parent.get('name', None)
+            #try to find parent. ElementTree does not keep track
+            #of parent, so we search for element and see if current
+            #element is in children, a bit weird :).
+            elements = self.wsdl.findall('.//{%s}element' % NS_XSD)
+            parent = None
+            for e in elements:
+                if element in e:
+                    parent = e
+                    break
+            if parent is None:
+                return None
+            name = parent.get('name', None)
         return name
 
     def create_named_class(self, name, types, allelements):
@@ -198,16 +190,16 @@ class WSDLParser(object):
         #iterate over children
         #handle only children, bases non-primitive classes and docs
         for subel in element:
-            if subel.tag in ("{%s}sequence" %self.nsmap[self.xsd],
-                             "{%s}all" %self.nsmap[self.xsd],
-                             "{%s}choice" %self.nsmap[self.xsd]):
+            if subel.tag in ("{%s}sequence" %NS_XSD,
+                             "{%s}all" %NS_XSD,
+                             "{%s}choice" %NS_XSD):
                 #add children - arguments of new class
                 self.collect_children(subel, children, types, allelements)
 
-            elif subel.tag == "{%s}complexContent" %self.nsmap[self.xsd]:
+            elif subel.tag == "{%s}complexContent" %NS_XSD:
                 #base class
                 subel = subel[0]
-                if subel.tag == "{%s}extension" %self.nsmap[self.xsd]:
+                if subel.tag == "{%s}extension" %NS_XSD:
                     base_name = get_local_name(subel.get("base", None))
                     b = types.get(base_name, None)
                     if b is None:
@@ -217,13 +209,13 @@ class WSDLParser(object):
                         raise ValueError("Base %s class is not found" %base_name)
                     base.append(b)
                 for subsub in subel:
-                    if subsub.tag in ("{%s}sequence" %self.nsmap[self.xsd],
-                                      "{%s}all" %self.nsmap[self.xsd],
-                                      "{%s}choice" %self.nsmap[self.xsd]):
+                    if subsub.tag in ("{%s}sequence" %NS_XSD,
+                                      "{%s}all" %NS_XSD,
+                                      "{%s}choice" %NS_XSD):
                         self.collect_children(subsub, children, types, allelements)
-            elif subel.tag == "{%s}annotation" %self.nsmap[self.xsd]:
+            elif subel.tag == "{%s}annotation" %NS_XSD:
                 if len(subel) and\
-                   subel[0].tag == "{%s}documentation" %self.nsmap[self.xsd]:
+                   subel[0].tag == "{%s}documentation" %NS_XSD:
                     doc = subel[0].text
 
         if name not in types:
@@ -254,8 +246,8 @@ class WSDLParser(object):
                 A map of found types {type_name : complex class}
         """
         #find all types defined here
-        types = self.wsdl.xpath('//%s:complexType|//%s:simpleType' %
-                                (self.xsd, self.xsd), namespaces=self.nsmap)
+        types = self.wsdl.findall('.//{%s}complexType' %NS_XSD)
+        types.extend(self.wsdl.findall('.//{%s}simpleType' %NS_XSD))
 
         res = initialmap.copy() #types container
         #iterate over the found types and fill in the container
@@ -273,7 +265,7 @@ class WSDLParser(object):
                 continue
 
             #if unknown simple type - raise error
-            if t.tag == "{%s}simpleType" %self.nsmap[self.xsd]:
+            if t.tag == "{%s}simpleType" %NS_XSD:
                 raise ValueError("Uknown simple type %s" %name)
 
             #handle complex type, this also registers new class to result
@@ -298,18 +290,20 @@ class WSDLParser(object):
         res = {} # future result
 
         #find all service definitions
-        services = self.wsdl.xpath('//%s:service' % self.wsdl_ns,
-                                                      namespaces=self.nsmap)
+        services = self.wsdl.findall('.//{%s}service' %NS_WSDL)
+        bindings = self.wsdl.findall(".//{%s}binding" %NS_WSDL)
+        port_types = self.wsdl.findall(".//{%s}portType" %NS_WSDL)
+        messages = self.wsdl.findall('.//{%s}message' %NS_WSDL)
         for service in services:
             #all ports defined in this service. Port contains
             #operations
-            for port in service.xpath('//%s:port' % self.wsdl_ns,
-                                                     namespaces=self.nsmap):
+            ports = service.findall('.//{%s}port' %NS_WSDL)
+            for port in ports:
                 subel = port[0]
 
                 #check that this is a soap port, since wsdl can
                 #also define other ports
-                if self.nsmap[subel.prefix] not in (NS_SOAP, NS_SOAP12):
+                if get_ns(subel.tag) not in (NS_SOAP, NS_SOAP12):
                     continue
 
                 #port location
@@ -317,9 +311,9 @@ class WSDLParser(object):
 
                 #find binding for this port
                 binding_name = get_local_name(port.get('binding'))
-                binding = self.wsdl.xpath("//%s:binding[@name='%s']" %
-                                          (self.wsdl_ns, binding_name),
-                                               namespaces=self.nsmap)[0]
+                for binding in bindings:
+                    if binding.get("name") == binding_name:
+                        break
 
                 #find binding style
                 soap_binding = binding.find('{%s}binding' % NS_SOAP)
@@ -334,13 +328,13 @@ class WSDLParser(object):
 
                 #get port type - operation + message links
                 port_type_name = get_local_name(binding.get('type'))
-                port_type = self.wsdl.xpath("//%s:portType[@name='%s']" %
-                                            (self.wsdl_ns, port_type_name),
-                                                   namespaces=self.nsmap)[0]
+                for port_type in port_types:
+                    if port_type.get("name") == port_type_name:
+                        break
+                port_operations = port_type.findall("{%s}operation" %NS_WSDL)
 
                 #get operations
-                operations = binding.xpath('%s:operation' % self.wsdl_ns,
-                                                        namespaces=self.nsmap)
+                operations = binding.findall('{%s}operation' % NS_WSDL)
                 for operation in operations:
                     #get operation name
                     name = get_local_name(operation.get("name"))
@@ -367,27 +361,27 @@ class WSDLParser(object):
                     #do not support in/out headers, otherwise must be found here
 
                     #go to port part and find messages.
-                    port_operation = port_type.xpath("%s:operation[@name='%s']" %
-                                                      (self.wsdl_ns, name),
-                                                       namespaces=self.nsmap)[0]
-                    in_msg_name = get_local_name(port_operation.xpath(
-                                            '%s:input/@message' % self.wsdl_ns,
-                                                    namespaces=self.nsmap)[0])
-                    out_msg_name = get_local_name(port_operation.xpath(
-                                            '%s:output/@message' % self.wsdl_ns,
-                                                    namespaces=self.nsmap)[0])
+                    for port_operation in port_operations:
+                        if port_operation.get("name") == name:
+                            break
+                    in_msg_name = get_local_name(
+                            port_operation.find('{%s}input' %NS_WSDL).get("message"))
+                    out_msg_name = get_local_name(
+                            port_operation.find('{%s}output' %NS_WSDL).get("message"))
                     #documentation
                     doc = port_operation.find('{%s}documentation' %NS_WSDL)
                     if doc is not None:
                         doc = doc.text
 
                     #finally go to message section
-                    in_types = self.wsdl.xpath('//%s:message[@name="%s"]/%s:part' %
-                                            (self.wsdl_ns, in_msg_name, self.wsdl_ns),
-                                                            namespaces=self.nsmap)
-                    out_types = self.wsdl.xpath('//%s:message[@name="%s"]/%s:part' %
-                                        (self.wsdl_ns, out_msg_name, self.wsdl_ns),
-                                                            namespaces=self.nsmap)
+                    for in_msg_xml in messages:
+                        if in_msg_xml.get("name") == in_msg_name:
+                            break
+                    for out_msg_xml in messages:
+                        if out_msg_xml.get("name") == out_msg_name:
+                            break
+                    in_types = in_msg_xml.findall('{%s}part' %NS_WSDL)
+                    out_types = out_msg_xml.findall('{%s}part' %NS_WSDL)
                     #create input and output messages
                     in_msg = self.create_msg(name, in_types, operation_style,
                                                                  literal, types)
@@ -431,11 +425,8 @@ class WSDLParser(object):
             type_name = get_local_name(type_name)
             parts.append((part_name, types[type_name]))
 
-        #namespace stuff
-        nsmap = {None: self.tns}
-
         #create message
-        return Message(name, self.tns, nsmap, parts, style, literal)
+        return Message(name, self.tns, parts, style, literal)
 
 
 

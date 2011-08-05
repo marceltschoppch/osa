@@ -2,9 +2,9 @@
     Classes required for remote method calls: messages and method wrappers.
 """
 from soap import *
-from lxml import etree
+from exceptions import ValueError, RuntimeError
 from urllib2 import urlopen, Request, HTTPError
-#import xml.etree.cElementTree as etree
+import xml.etree.cElementTree as etree
 
 class Message(object):
     """
@@ -27,8 +27,6 @@ class Message(object):
             Name of the message.
         namespafe : str
             Namespace of the message.
-        nsmap : dict
-            Map of namespace prefixes.
         parts : list
             List of message parts in the form
             (part name, part type class).
@@ -38,10 +36,9 @@ class Message(object):
         literal : bool
             True = literal, False = encoded.
     """
-    def __init__(self, tag, namespace, nsmap, parts, style, literal):
+    def __init__(self, tag, namespace, parts, style, literal):
         self.tag = tag
         self.namespace = namespace
-        self.nsmap = nsmap
         self.parts = parts
         self.style = style
         self.literal = literal
@@ -123,7 +120,7 @@ class Message(object):
                 - a mixture of positional and keyword arguments.
 
             Keyword arguments must have at least one member: _body which
-            contains lxml.etree.Element to append the conversion result to.
+            contains etree.Element to append the conversion result to.
         """
         if self.style != "document" or not(self.literal):
             raise RuntimeError(
@@ -235,11 +232,9 @@ class Method(object):
             Process rpc-call.
         """
         #create soap-wrap around our message
-        env = etree.Element('{%s}Envelope' % SOAPNS['soap-env'], nsmap=SOAPNS)
-        header = etree.SubElement(env, '{%s}Header' % SOAPNS['soap-env'],
-                                                                 nsmap=SOAPNS)
-        body = etree.SubElement(env, '{%s}Body' % SOAPNS['soap-env'],
-                                                                 nsmap=SOAPNS)
+        env = etree.Element('{%s}Envelope' %NS_SOAP_ENV)
+        header = etree.SubElement(env, '{%s}Header' %NS_SOAP_ENV)
+        body = etree.SubElement(env, '{%s}Body' %NS_SOAP_ENV)
 
         #compose call message - convert all parameters and encode the call
         kw["_body"] = body
@@ -252,6 +247,7 @@ class Method(object):
         request = Request(self.location, text_msg,
                                 {'Content-Type': 'text/xml',
                                 'SOAPAction': self.action})
+        del text_msg
 
         #real rpc
         try:
@@ -264,6 +260,7 @@ class Method(object):
             body = xml.find(SOAP_BODY)
             if body is None:
                 raise RuntimeError("No SOAP body found in response")
+            body = body[0] # hacky? get the first real element
         except HTTPError, e:
             if e.code in (202,204):
                 return None
@@ -291,8 +288,6 @@ class Method(object):
                     raise
             else:
                 raise
-
-        body = body[0] # hacky? get the first real element
 
         return self.output.from_xml(body)
 

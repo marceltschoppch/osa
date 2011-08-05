@@ -7,22 +7,12 @@ NS_SOAP_ENV = "http://schemas.xmlsoap.org/soap/envelope/"
 NS_SOAP_ENC = "http://schemas.xmlsoap.org/soap/encoding/"
 NS_SOAP = 'http://schemas.xmlsoap.org/wsdl/soap/'
 NS_SOAP12 = 'http://schemas.xmlsoap.org/wsdl/soap12/'
-NS_XSI = "http://www.w3.org/1999/XMLSchema-instance"
-NS_XSD = "http://www.w3.org/1999/XMLSchema"
+NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
+NS_XSD = "http://www.w3.org/2001/XMLSchema"
 NS_WSDL = 'http://schemas.xmlsoap.org/wsdl/'
 SOAP_BODY = '{%s}Body' % NS_SOAP_ENV
 SOAP_FAULT = '{%s}Fault' % NS_SOAP_ENV
 SOAP_HEADER = '{%s}Header' % NS_SOAP_ENV
-
-#namespace mapping
-SOAPNS = {
-             'soap-env'         : NS_SOAP_ENV,
-             'soap-enc'         : NS_SOAP_ENC,
-             'soap'             : NS_SOAP,
-             'soap12'           : NS_SOAP12,
-             'wsdl'             : NS_WSDL,
-             'xsi'              : NS_XSI,
-             'xsd'              : NS_XSD }
 
 def get_local_name(full_name):
     """
@@ -60,3 +50,23 @@ def get_local_type(xmltype):
         return 'datetime'
     else:
         return xmltype
+
+def get_ns(tag):
+    """
+        Extract namespace.
+
+        This function is opposite to get_local_name, in that
+        it returns the first part of the tag: the namespace.
+
+        Parameters
+        ----------
+        tag : str
+            Tag to process.
+    """
+    p_open = tag.find('{')
+    p_close = tag.find('}')
+    if p_open != -1 and p_close != -1:
+        return tag[p_open+1:p_close]
+    else:
+        return ''
+
