@@ -30,48 +30,61 @@ class Client(object):
         Top level class to talk to soap services.
 
         This is an access point to service functionality. The client accepts
-        WSDL address and uses WSDLParser to get all defined types and
+        WSDL address and uses `osa.wsdl.WSDLParser` to get all defined types and
         operations. The types are set to client.types and operations
         are set to self.service.
 
-        To examine present types or operations simply print (or touch repr):
-            client.types or client.service, correspondingly.
+        To examine present types or operations simply print (or touch repr)::
 
-        To create type simply call:
-            client.types.MyTypeName().
+            >>> client.types
+
+        or::
+
+            >>> client.service
+
+        correspondingly.
+
+        To create type simply call::
+
+            >>> client.types.MyTypeName().
+
         Class constructor will also create all obligatory (non-nillable) children.
-        To call an operation:
-            client.service.MyOperationName(arg1, arg2, arg3, ...),
+        To call an operation::
+
+            >>> client.service.MyOperationName(arg1, arg2, arg3, ...),
+
         where arguments are of required types. Arguments can also
         be passed as keywords or a ready wrapped message.
 
         If any help is available in the WSDL document it is propagated to the
-        types and operations, see e.g. help client.types.MyTypeName. In addition
+        types and operations, see e.g. help
+        :py:attr:`client.types.MyTypeName`. In addition
         the help page on an operation displays its call signature.
 
-        Nice printing is also available for all types defined in client.types:
-            print(client.types.MyTypeName())
+        Nice printing is also available for all types defined in client.types::
+
+            >>> print(client.types.MyTypeName())
 
         .. warning::
             Only document/literal wrapped convention is implemented at the moment.
 
-        Details
-        -------
         In reality client.types and client.service are simply containers.
         The content of these containers is set from results of parsing
-        the wsdl document by WSDLParser.get_types and WSDLParser.get_methods
-        correspondingly.
+        the wsdl document by
+        `osa.wsdl.WSDLParser.get_types` and
+        `osa.wsdl.WSDLParser.get_methods` correspondingly.
 
-        The client.types container consists of auto generated (by WSDLParser)
+        The client.types container consists of auto generated (by
+        `osa.wsdl.WSDLParser`)
         class definitions. So that a call to a member returns and instance
         of the new type. New types are auto-generated according to a special
-        convention by metaclass xmltypes.ComplexTypeMeta.
+        convention by metaclass `osa.xmltypes.ComplexTypeMeta`.
 
         The client.service container consists of methods wrapers
         methods.Method. The method wrapper is callable with free number of
         parameters. The input and output requirements of a method are
-        contained in methods.Message instances Method.input and
-        Method.output correspondingly. On a call a method converts
+        contained in methods.Message instances `osa.methods.Method.input` and
+        `osa.methods.Method.output` correspondingly. On a call a method converts
         the input to XML by using Method.input, sends request to the
         service and finally decodes the response from XML by
         Method.output.

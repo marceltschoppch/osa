@@ -86,7 +86,7 @@ class WSDLParser(object):
 
             Parameters
             ----------
-            element : etree.Element
+            element : `etree.Element`
                 XML description of the type.
         """
         name = element.get('name', None)
@@ -410,7 +410,7 @@ class WSDLParser(object):
 
             Returns
             -------
-            out : Message instance
+            out : `osa.methods.Message` instance
                 Message for handling calls in/out.
         """
         #get all parameters - parts of the message

@@ -7,3 +7,7 @@ This library is based on some ideas from:
     suds - https://fedorahosted.org/suds/
     soaplib - https://github.com/soaplib/soaplib
 With many thanks to the contributors of those libraries.
+
+To install do the usual:
+
+    python setup.py install

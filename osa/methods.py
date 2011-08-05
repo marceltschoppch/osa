@@ -190,9 +190,9 @@ class Method(object):
             Name of operation
         action : str
             Action (?) as found in binding part of WSDL.
-        input : Message instance
+        input : `osa.methods.Message` instance
             Input message description.
-        output : Message instance
+        output : `osa.methods.Message` instance
             Output message description.
         doc : str, optional - default to None
             Documentation of the method as found in portType section of WSDL.
