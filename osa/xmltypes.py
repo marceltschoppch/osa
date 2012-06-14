@@ -366,7 +366,9 @@ class XMLDate(XMLType):
         if not(element.text):
             return None
         text = element.text
-
+        pos = text.find("UTC")
+        if pos != -1:
+            text = text[:pos]
         full = datetime.strptime(text, '%Y-%m-%d')
 
         return full.date()
@@ -386,4 +388,7 @@ class XMLDateTime(XMLType):
         if not(element.text):
             return None
         text = element.text
+        pos = text.find("UTC")
+        if pos != -1:
+            text = text[:pos]
         return datetime.strptime(text, '%Y-%m-%dT%H:%M:%S.%f')
