@@ -145,19 +145,29 @@ class XMLType(object):
             elif val is not None:
                 n = 1
                 val = [val, ]
-            self.check_constraints(n, child['min'], child['max'])
+
+            if n < child["min"]:
+                raise ValueError("Number of values for %s is less than min_occurs: %s" %(name, str(val)))
+            if n > child["max"]:
+                raise ValueError("Number of values for %s is more than max_occurs: %s" %(name, str(val)))
+
             if n == 0:
                 continue #only nillables can get so far
 
             #conversion
             full_name = ns + child_name #name with namespace
             for single in val:
-                if not(isinstance(single, child['type'])):
-                    #useful for primitive types:  python int, e.g.,
-                    #can be passed directly. If str is used instead
-                    #an exception is fired up.
+                try:
+                    single.to_xml(element, full_name)
+                except Exception:
                     single = child['type'](single)
-                single.to_xml(element, full_name)
+                    single.to_xml(element, full_name)
+                #if not(isinstance(single, child['type'])):
+                    ##useful for primitive types:  python int, e.g.,
+                    ##can be passed directly. If str is used instead
+                    ##an exception is fired up.
+                    #single = child['type'](single)
+                #single.to_xml(element, full_name)
 
     def from_xml(self, element):
         """
