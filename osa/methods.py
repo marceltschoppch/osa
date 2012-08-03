@@ -266,7 +266,11 @@ class Method(object):
                 return None
             elif e.code == 500:
                 #read http error body and make xml from it
-                xml = etree.fromstring(e.fp.read())
+                try:
+                    xml = etree.fromstring(e.fp.read())
+                except Exception:
+                    print(e)
+                    return None
                 body = xml.find(SOAP_BODY)
                 if body is None:
                     raise
