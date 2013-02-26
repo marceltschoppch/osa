@@ -76,6 +76,12 @@ def tostr(self):
 
     return res
 
+def equal(x1, x2):
+    return x1.__dict__ == x2.__dict__
+
+def notequal(x1, x2):
+    return not(equal(x1, x2))
+
 class XMLType(object):
     """
         Base xml schema type.
@@ -259,6 +265,9 @@ class ComplexTypeMeta(type):
         clsDict["__repr__"] = tostr
         #add complex init
         clsDict["__init__"] = toinit
+        #comparison
+        clsDict["__eq__"] = equal
+        clsDict["__ne__"] = notequal
 
         #extend children list with that of base classes
         new = []
