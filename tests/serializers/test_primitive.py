@@ -25,6 +25,28 @@ class TestPrimitive(unittest.TestCase):
         self.assertEquals(element.text, 'value')
         value = XMLString().from_xml(element)
         self.assertEquals(value, 'value')
+    
+    def test_stringenumeration(self):
+        XMLStringEnumeration._allowedValues = ["me", "you"]
+        s1 = XMLStringEnumeration("me")
+        self.assertEquals(s1.value, "me")
+        s2 = XMLStringEnumeration("he")
+        self.assertEquals(s2.value, "he")
+
+        #toxml
+        element = etree.Element('test')
+        s1.to_xml(element, "{%s}%s" %(ns_test, "atach"))
+        element=element[0]
+        self.assertEquals(element.text, 'me')
+
+        element2 = etree.Element('test')
+        self.assertRaises(ValueError, s2.to_xml, element2, "{%s}%s" %(ns_test, "atach"))
+
+        #back
+        value = XMLStringEnumeration().from_xml(element)
+        self.assertEquals(value, 'me')
+        element.text="he"
+        self.assertRaises(ValueError, XMLStringEnumeration().from_xml, element)
 
     def test_datetime(self):
         d = XMLDateTime(datetime.now())

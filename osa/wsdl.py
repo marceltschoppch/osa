@@ -1,35 +1,14 @@
 """
     Conversion of WSDL documents into Python.
 """
-from xmltypes import *
-from methods import *
-from soap import *
-import urllib2
+import xmlnamespace
+import xmlparser
+import xmlschema
+import xmltypes
+import message
+import method
+import methods
 import xml.etree.cElementTree as etree
-
-#primitive types mapping xml -> python
-_primmap = { 'anyType'          : XMLAny,
-             'boolean'          : XMLBoolean,
-             'decimal'          : XMLDecimal,
-             'int'              : XMLInteger,
-             'integer'          : XMLInteger,
-             'positiveInteger'  : XMLInteger,
-             'unsignedInt'      : XMLInteger,
-             'short'            : XMLInteger,
-             'byte'             : XMLInteger,
-             'long'             : XMLInteger,
-             'float'            : XMLDouble,
-             'double'           : XMLDouble,
-             'string'           : XMLString,
-             'base64Binary'     : XMLString,
-             'anyURI'           : XMLString,
-             'language'         : XMLString,
-             'token'            : XMLString,
-             'date'             : XMLDate,
-             'dateTime'         : XMLDateTime,
-             # FIXME: probably timedelta, but needs parsing.
-             # It looks like P29DT23H54M58S
-             'duration'         : XMLString}
 
 class WSDLParser(object):
     """
@@ -42,7 +21,7 @@ class WSDLParser(object):
             The WSDL document is loaded and is converted into xml.
 
             Initialized members:
-            self.wsdl_url  - url of wsdl document
+            self.wsdl_url  - url of wsdl document, or file
             self.wsdl - xml document read from wsdl_url (etree.Element)
             self.tns - target namespace
 
@@ -51,382 +30,263 @@ class WSDLParser(object):
             wsdl_url : str
                 Address of the WSDL document.
         """
-        #open wsdl page - get a file like object and
-        # parse it into xml
-        page_handler = urllib2.urlopen(wsdl_url)
-        self.wsdl = etree.parse(page_handler).getroot()
-        page_handler.close()
-        del page_handler
         self.wsdl_url = wsdl_url
+        self.wsdl = xmlparser.parse_qualified_from_url(wsdl_url)
+        if self.wsdl.tag != "{%s}definitions" %xmlnamespace.NS_WSDL:
+            raise ValueError("Not a WSDL xml, the top level element: %s" %self.wsdl.tag)
         #get target namespace
-        self.tns = self.wsdl.get('targetNamespace', None)
+        self.tns = self.wsdl.get('targetNamespace', "")
 
-    def get_service_names(self):
-        """
-            Returns names of services found in WSDL.
-
-            This is from wsdl:service section.
-
-            Returns
-            -------
-            out : list of str
-                Names.
-        """
-        services = self.wsdl.findall('.//{%s}service' % NS_WSDL)
-        res = []
-        for service in services:
-            name = service.get("name", None)
-            if name is not None:
-                res.append(name)
-        return res
-
-    def get_type_name(self, element):
-        """
-            Get type name from XML element.
-
-            Parameters
-            ----------
-            element : `etree.Element`
-                XML description of the type.
-        """
-        name = element.get('name', None)
-        if name is None:
-            #try to find parent. ElementTree does not keep track
-            #of parent, so we search for element and see if current
-            #element is in children, a bit weird :).
-            elements = self.wsdl.findall('.//{%s}element' % NS_XSD)
-            parent = None
-            for e in elements:
-                if element in e:
-                    parent = e
-                    break
-            if parent is None:
-                return None
-            name = parent.get('name', None)
-        return name
-
-    def create_named_class(self, name, types, allelements):
-        """
-            Creates a single named type.
-
-            Function searches through all available elements to find one
-            suitable. This is useful if a type is present as a child before
-            it is present in the list.
-
-            Parameters
-            ----------
-            name : str
-                Name of the type.
-            types : dict
-                Map of known types.
-            allelements : list of etree.Element instance
-                List of all types found in WSDL. It is used to create
-                related classes in place.
-        """
-        for element in allelements:
-            el_name = self.get_type_name(element)
-            if el_name == name:
-                self.create_class(element, el_name, types, allelements)
-                break
-
-    def collect_children(self, element, children, types, allelements):
-        """
-            Collect information about children (xml sequence, etc.)
-
-            Parameters
-            ----------
-            element : etree.Element
-                XML sequence container.
-            children : list
-                Information is appended to this list.
-            types : dict
-                Known types map.
-            allelements : list of etree.Element instance
-                List of all types found in WSDL. It is used to create
-                related classes in place.
-        """
-        for subel in element:
-            #iterate over sequence, do not consider in place defs
-            type = get_local_name(subel.get('type', None))
-            if type is None:
-                raise ValueError(
-                        "Do not support this type of complex type: %s"
-                                                         %subsub.tag)
-            ch = types.get(type, None)
-            if ch is None:
-                self.create_named_class(type, types, allelements)
-            ch = types.get(type, None)
-            if ch is None:
-                raise ValueError("Child %s class is not found " %type)
-            child_name = subel.get('name', 'unknown')
-            minOccurs = int(subel.get('minOccurs', 1))
-            maxOccurs = subel.get('maxOccurs', 1)
-            if maxOccurs != 'unbounded':
-                maxOccurs = int(maxOccurs)
-            children.append({ "name":child_name,
-                             'type' : ch,
-                             'min' : minOccurs,
-                             'max' : maxOccurs})
-
-    def create_class(self, element, name, types, allelements):
-        """
-            Create new type from xml description.
-
-            Parameters
-            ----------
-            element : etree.Element instance
-                XML description of a complex type.
-            name : str
-                Name of the new class.
-            types : dict
-                Map of already known types.
-            allelements : list of etree.Element instance
-                List of all types found in WSDL. It is used to create
-                related classes in place.
-        """
-        doc = None
-        children = []
-        base = []
-        #iterate over children
-        #handle only children, bases non-primitive classes and docs
-        for subel in element:
-            if subel.tag in ("{%s}sequence" %NS_XSD,
-                             "{%s}all" %NS_XSD,
-                             "{%s}choice" %NS_XSD):
-                #add children - arguments of new class
-                self.collect_children(subel, children, types, allelements)
-
-            elif subel.tag == "{%s}complexContent" %NS_XSD:
-                #base class
-                subel = subel[0]
-                if subel.tag == "{%s}extension" %NS_XSD:
-                    base_name = get_local_name(subel.get("base", None))
-                    b = types.get(base_name, None)
-                    if b is None:
-                        self.create_named_class(base_name, types, allelements)
-                    b = types.get(base_name, None)
-                    if b is None:
-                        raise ValueError("Base %s class is not found" %base_name)
-                    base.append(b)
-                for subsub in subel:
-                    if subsub.tag in ("{%s}sequence" %NS_XSD,
-                                      "{%s}all" %NS_XSD,
-                                      "{%s}choice" %NS_XSD):
-                        self.collect_children(subsub, children, types, allelements)
-            elif subel.tag == "{%s}annotation" %NS_XSD:
-                if len(subel) and\
-                   subel[0].tag == "{%s}documentation" %NS_XSD:
-                    doc = subel[0].text
-
-        if name not in types:
-            #create new class
-            cls = ComplexTypeMeta(name, base,
-                                      {"_children":children, "__doc__":doc})
-            types[name] = cls
-
-
-    def get_types(self, initialmap):
+    def get_types(self, ):
         """
             Constructs a map of all types defined in the document.
-
-            At the moment simple types are not processed at all!
-            Only complex types are considered. If attribute
-            or what so ever are encountered an exception if fired.
-
-            Parameters
-            ----------
-            initialmap : dict
-                Initial map of types. Usually it will be _primmap.
-                This is present here so that different services
-                can create own types of XMLAny.
 
             Returns
             -------
             out : dict
                 A map of found types {type_name : complex class}
         """
-        #find all types defined here
-        types = self.wsdl.findall('.//{%s}complexType' %NS_XSD)
-        types.extend(self.wsdl.findall('.//{%s}simpleType' %NS_XSD))
+        types_section = self.wsdl.findall('.//{%s}types' %xmlnamespace.NS_WSDL)[0]
+        schemas = types_section.findall('./{%s}schema' %xmlnamespace.NS_XSD)
+        xtypes = {}
+        for schema in schemas:
+            parser = xmlschema.XMLSchemaParser(schema)
+            xtypes.update(parser.get_list_of_defined_types())
+        return xmlschema.XMLSchemaParser.convert_xmltypes_to_python(xtypes)
 
-        res = initialmap.copy() #types container
-        #iterate over the found types and fill in the container
-        # If an element used types placed later in the document, it will
-        #created in place when calling create_class.
-        for t in types:
-
-            #get name of the type
-            name = self.get_type_name(t)
-            if name is None:
-                continue
-
-            #if type is primitive or was already processed, skip it
-            if (res.get(name, None) is not None):
-                continue
-
-            #if unknown simple type - raise error
-            if t.tag == "{%s}simpleType" %NS_XSD:
-                raise ValueError("Uknown simple type %s" %name)
-
-            #handle complex type, this also registers new class to result
-            self.create_class(t, name, res, types)
-
-        return res
-
-    def get_methods(self, types):
+    def get_messages(self, types):
         """
-            Construct a map of all operations defined in the document.
+            Construct messages from message section.
 
             Parameters
             ----------
-            types : dict
-                Map of known types as returned by get_types.
+            types : dictionary of types
+                Types as returned by get_types().
+
+           Returns
+           -------
+           out : dict
+            Map message name -> Message instance
+        """
+        xmessages = self.wsdl.findall('./{%s}message' %xmlnamespace.NS_WSDL)
+        messages = {}
+        for x in xmessages:
+            message_name = "{%s}%s" %(self.tns, x.get("name", ""))
+            parts = []
+            xparts = x.findall('./{%s}part' %xmlnamespace.NS_WSDL)
+            for y in xparts:
+                part_name = y.get("name", "")
+                part_type = y.get("element", None)
+                if part_type is None:
+                    part_type = y.get("type", None)
+                if part_type is None:
+                    raise ValueError("Could not find part type in:\n %s"\
+                                     %(etree.tostring(x)))
+                cls = None
+                if types.has_key(part_type):
+                    cls = types[part_type]
+                elif xmltypes.primmap.has_key(part_type):
+                    cls = xmltypes.primmap[part_type]
+                else:
+                    raise ValueError("Type %s not found for message:\n%s"\
+                                    %(part_type, etree.tostring(x)))
+                parts.append([part_name, cls])
+            messages[message_name] = message.Message(message_name,
+                                                     parts)
+        return messages
+
+    def get_operations(self, messages):
+        """
+            Get list of operations with messages
+            from portType section.
+
+            Parameters
+            ----------
+            messages : dict
+                Dictionary of message from `get_messages`.
+
+           Returns
+           -------
+           out : dict
+            {portType -> {operation name -> Method instance}}
+            The method here does not have location.
+        """
+        xports = self.wsdl.findall('./{%s}portType' %xmlnamespace.NS_WSDL)
+        ports = {}
+        for xport in xports:
+            port_name = "{%s}%s" %(self.tns, xport.get("name", ""))
+            ports[port_name] = {}
+            xops = xport.findall('./{%s}operation' %xmlnamespace.NS_WSDL)
+            for xop in xops:
+                op_name = xop.get("name", "")
+                ports[port_name][op_name] = {}
+                xin = xop.findall('./{%s}input' %xmlnamespace.NS_WSDL)
+                if not(xin):
+                    raise ValueError("No input message in operation: \n%s"\
+                                     %(etree.tostring(xop)))
+                in_name = xin[0].get("message", "")
+                if not(messages.has_key(in_name)):
+                    raise ValueError("Message %s not found." %in_name)
+                in_cl = messages[in_name]
+                out_cl = None
+                xout = xop.findall('./{%s}output' %xmlnamespace.NS_WSDL)
+                if xout:
+                    out_name = xout[0].get("message", "")
+                    if not(messages.has_key(out_name)):
+                        raise ValueError("Message %s not found." %in_name)
+                    out_cl = messages[out_name]
+
+                #documentation
+                doc = xop.find('{%s}documentation' %xmlnamespace.NS_WSDL)
+                if doc is not None:
+                    doc = doc.text
+
+                op = method.Method(op_name, in_cl, out_cl, doc=doc)
+                ports[port_name][op_name] = op
+        return ports
+
+    def get_bindings(self, operations):
+        """
+            Check binding document/literal and http transport.
+
+            If any of the conditions is not satisfied 
+            the binding is dropped, i.e. not present in
+            the return value. This also sets soapAction
+            and use_parts of the messages.
+
+            Parameters
+            ----------
+            operations : dict as returned by get_operations
 
             Returns
             -------
             out : dict
-                A map of operations: {operation name : method object}
+             Map similar to that from get_operations but
+             with binding names instead of portType names.
         """
-        res = {} # future result
+        xbindings = self.wsdl.findall("./{%s}binding" %xmlnamespace.NS_WSDL)
+        bindings = {}
+        for xb in xbindings:
+            b_name = "{%s}%s" %(self.tns, xb.get("name", ""))
+            b_type = xb.get("type", None)
+            if b_type is None:
+                raise ValueError("No type in binding %s"\
+                                    %(etree.tostring(xb)))
+            if not(operations.has_key(b_type)):
+                raise ValueError("Binding type %s no in operations" %b_type)
+            xb_soap = xb.findall("./{%s}binding" %xmlnamespace.NS_SOAP)
+            if not(xb_soap):
+                continue # not a soap binding in wsdl
+            if xb_soap[0].get("style", "") == "rpc":
+                continue
+            if xb_soap[0].get("transport", "") !=\
+                    "http://schemas.xmlsoap.org/soap/http":
+                continue
+            ops = operations[b_type]
+            bindings[b_name] = {}
+            xops = xb.findall("./{%s}operation" %xmlnamespace.NS_WSDL)
+            for xop in xops:
+                op_name = xop.get("name", "")
+                if not(ops.has_key(op_name)):
+                    raise ValueError("operation %s no in operations"\
+                                    %op_name)
+                soap_op = xop.find("./{%s}operation" %xmlnamespace.NS_SOAP)
+                s_action = None
+                if soap_op is not None:
+                    s_action = soap_op.get("soapAction", "")
 
-        #find all service definitions
-        services = self.wsdl.findall('.//{%s}service' %NS_WSDL)
-        bindings = self.wsdl.findall(".//{%s}binding" %NS_WSDL)
-        port_types = self.wsdl.findall(".//{%s}portType" %NS_WSDL)
-        messages = self.wsdl.findall('.//{%s}message' %NS_WSDL)
-        for service in services:
-            #all ports defined in this service. Port contains
-            #operations
-            ports = service.findall('.//{%s}port' %NS_WSDL)
-            for port in ports:
-                subel = port[0]
+                all_literal = True
+                xop_in = xop.find("./{%s}input" %xmlnamespace.NS_WSDL)
+                if xop_in is not None:
+                    xop_in_body = xop_in.find("./{%s}body" %xmlnamespace.NS_SOAP)
+                    if xop_in_body is None:
+                        raise ValueError("No body found for %s"\
+                                    %(etree.tostring(xop)))
+                    if xop_in_body.get("use") != "literal":
+                        all_literal = False
+                    parts = xop_in_body.get("parts")
+                    if parts is None:
+                        ops[op_name].input.use_parts = ops[op_name].input.parts
+                    else:
+                        parts = parts.split(" ")
+                        ops[op_name].input.use_parts = []
+                        for p in parts:
+                            for pp in ops[op_name].input.parts:
+                                if pp[0] == p:
+                                    ops[op_name].input.use_parts.append(pp)
+                                    break
+                        
+                xop_out = xop.find("./{%s}output" %xmlnamespace.NS_WSDL)
+                if xop_out is not None:
+                    xop_out_body = xop_out.find("./{%s}body" %xmlnamespace.NS_SOAP)
+                    if xop_out_body is None:
+                        raise ValueError("No body found for %s"\
+                                    %(etree.tostring(xop)))
+                    if xop_out_body.get("use") != "literal":
+                        all_literal = False
+                    parts = xop_out_body.get("parts")
+                    if parts is None:
+                        ops[op_name].output.use_parts = ops[op_name].output.parts
+                    else:
+                        parts = parts.split(" ")
+                        ops[op_name].output.use_parts = []
+                        for p in parts:
+                            for pp in ops[op_name].output.parts:
+                                if pp[0] == p:
+                                    ops[op_name].output.use_parts.append(pp)
+                                    break
+                ops[op_name]._redoc() #rebuild __doc__ after messing with messages
 
-                #check that this is a soap port, since wsdl can
-                #also define other ports
-                if get_ns(subel.tag) not in (NS_SOAP, NS_SOAP12):
-                    continue
+                if all_literal:
+                    ops[op_name].action = s_action
+                    bindings[b_name][op_name] = ops[op_name]
+        return bindings
 
-                #port location
-                location = subel.get('location')
-
-                #find binding for this port
-                binding_name = get_local_name(port.get('binding'))
-                for binding in bindings:
-                    if binding.get("name") == binding_name:
-                        break
-
-                #find binding style
-                soap_binding = binding.find('{%s}binding' % NS_SOAP)
-                if soap_binding is None:
-                    soap_binding = binding.find('{%s}binding' % NS_SOAP12)
-                if soap_binding is None:
-                    soap_binding = binding.find('binding')
-                if soap_binding is None:
-                    raise SyntaxError("No SOAP binding found in %s" %
-                                                    etree.tostring(binding))
-                style =  soap_binding.get('style')
-
-                #get port type - operation + message links
-                port_type_name = get_local_name(binding.get('type'))
-                for port_type in port_types:
-                    if port_type.get("name") == port_type_name:
-                        break
-                port_operations = port_type.findall("{%s}operation" %NS_WSDL)
-
-                #get operations
-                operations = binding.findall('{%s}operation' % NS_WSDL)
-                for operation in operations:
-                    #get operation name
-                    name = get_local_name(operation.get("name"))
-
-                    #check we have soap operation
-                    soap_op = operation.find('{%s}operation' % NS_SOAP)
-                    if soap_op is None:
-                        soap_op = operation.find('{%s}operation' % NS_SOAP12)
-                    if soap_op is None:
-                        soap_op = operation.find('operation')
-                    if soap_op is None:
-                        raise SyntaxError("No SOAP operation found in %s" %
-                                                  etree.tostring(operation))
-
-                    #operation action(?), style
-                    action = soap_op.attrib['soapAction']
-                    operation_style = soap_op.get('style', style)
-
-                    # FIXME is it reasonable to assume that input and output
-                    # are the same? Is it ok to ignore the encoding style?
-                    input = operation.find('{%s}input' % NS_WSDL)[0]
-                    literal = input.get('use') == 'literal'
-
-                    #do not support in/out headers, otherwise must be found here
-
-                    #go to port part and find messages.
-                    for port_operation in port_operations:
-                        if port_operation.get("name") == name:
-                            break
-                    in_msg_name = get_local_name(
-                            port_operation.find('{%s}input' %NS_WSDL).get("message"))
-                    out_msg_name = get_local_name(
-                            port_operation.find('{%s}output' %NS_WSDL).get("message"))
-                    #documentation
-                    doc = port_operation.find('{%s}documentation' %NS_WSDL)
-                    if doc is not None:
-                        doc = doc.text
-
-                    #finally go to message section
-                    for in_msg_xml in messages:
-                        if in_msg_xml.get("name") == in_msg_name:
-                            break
-                    for out_msg_xml in messages:
-                        if out_msg_xml.get("name") == out_msg_name:
-                            break
-                    in_types = in_msg_xml.findall('{%s}part' %NS_WSDL)
-                    out_types = out_msg_xml.findall('{%s}part' %NS_WSDL)
-                    #create input and output messages
-                    in_msg = self.create_msg(name, in_types, operation_style,
-                                                                 literal, types)
-                    out_msg = self.create_msg(name, out_types, operation_style,
-                                                                 literal, types)
-                    method = Method(location, name, action, in_msg, out_msg, doc=doc)
-                    res[name] = method
-        return res
-
-    def create_msg(self, name, part_elements, style, literal, types):
+    def get_services(self, bindings):
         """
-            Create input or output message.
+            Find all services an make final list of
+            operations.
+
+            This also sets location to all operations.
 
             Parameters
             ----------
-            name : str
-                Name of this message.
-            part_elements : list instance
-                List of parts as found in message section.
-            style : str
-                Style of operation: 'document', 'rpc'.
-            literal : bool
-                True = literal, False = encoded.
-            types : dict
-                Map of known types as returned by get_types.
+            bindings : dic from get_bindings.
 
             Returns
             -------
-            out : `osa.methods.Message` instance
-                Message for handling calls in/out.
+            out : dict
+                Dictionary {service -> {operation name -> method}.
         """
-        #get all parameters - parts of the message
-        parts = []
-        for t in part_elements:
-            part_name = t.get("name", None)
-            if part_name is None:
-                continue
-            type_name = t.get('element', None)
-            if type_name is None:
-                type_name = t.get('type', None)
-            type_name = get_local_name(type_name)
-            parts.append((part_name, types[type_name]))
 
-        #create message
-        return Message(name, self.tns, parts, style, literal)
+        xservices = self.wsdl.findall('./{%s}service' %xmlnamespace.NS_WSDL)
+        services = {}
+        for xs in xservices:
+            s_name = xs.get("name", "")
+            xports = xs.findall('./{%s}port' %xmlnamespace.NS_WSDL)
+            for xp in xports:
+                b = xp.get("binding", "")
+                xaddr = xp.findall('./{%s}address' %xmlnamespace.NS_SOAP)
+                if not(xaddr):
+                    continue # no soap 11
+                loc = xaddr[0].get("location", "")
+                if bindings.has_key(b):
+                    for k,v in bindings[b].items():
+                        v.location = loc
+                    services[s_name] = bindings[b]
+        return services
 
+    def parse(self):
+        """
+            Do parsing, return types, services.
 
-
+            Returns
+            -------
+            out : (types, services)
+        """
+        t = self.get_types()
+        m = self.get_messages(t)
+        op = self.get_operations(m)
+        b = self.get_bindings(op)
+        s = self.get_services(b)
+        return t,s

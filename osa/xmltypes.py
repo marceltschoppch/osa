@@ -1,23 +1,47 @@
 """
     Python classes corresponding to XML schema.
 """
-from exceptions import ValueError, RuntimeError
-import xml.etree.cElementTree as etree
+import xmlnamespace
 from decimal import Decimal
 from datetime import date, datetime, time
-from soap import *
+import xml.etree.cElementTree as etree
+
+
+def get_local_type(xmltype):
+    """
+        Simplifies types names, e.g. XMLInteger is
+        presented as int.
+
+        This is used for nice printing only.
+    """
+    if xmltype == "XMLBoolean":
+        return 'bool'
+    elif xmltype == "XMLDecimal":
+        return 'decimal'
+    elif xmltype == "XMLInteger":
+        return 'int'
+    elif xmltype == "XMLDouble":
+        return 'float'
+    elif xmltype == "XMLString":
+        return 'str'
+    elif xmltype == "XMLDate":
+        return 'date'
+    elif xmltype == "XMLDateTime":
+        return 'datetime'
+    else:
+        return xmltype
 
 def toinit(self, deep = False):
     """
         Nice init for complex types.
 
-        All obligatory (nonnillable) children can also be created.
+        All obligatory (non-nillable) children can also be created.
 
         Parameters
         ----------
         deep : bool, optional, defaule False
             If True all non-nillable children are created, otherwise
-            they are simplty None. The latter is used when
+            they are simply None. The latter is used when
             converting response from XML to Python.
     """
     if not(deep):
@@ -61,7 +85,7 @@ def tostr(self):
                 stop = 10
                 after = '\n...' + after
             child_value = ''
-            for val in tmp:
+            for val in tmp[:stop]:
                 child_value = child_value + ',\n%s' %str(val)
             child_value = '[\n' + child_value[2:] + after
         elif child_value is not None:
@@ -146,7 +170,7 @@ class XMLType(object):
 
             #do constraints checking
             n = 0 #number of values for constraints checking
-            if isinstance(val, (list, tuple)):
+            if hasattr(val, "__iter__"):#isinstance(val, (list, tuple)):
                 n = len(val)
             elif val is not None:
                 n = 1
@@ -196,7 +220,7 @@ class XMLType(object):
             all_children_names.append(child["name"])
 
         for subel in element:
-            name = get_local_name(subel.tag)
+            name = xmlnamespace.get_local_name(subel.tag)
             ind = all_children_names.index(name)
 
             #used for conversion. for primitive types we receive back built-ins
@@ -223,6 +247,45 @@ class XMLType(object):
         element.clear()
 
         return self
+    def to_file(self, fname):
+        """
+            Save to file as an xml string.
+
+            Parameters
+            ----------
+            fname : str
+                Filename to use.
+        """
+        if self._namespace:
+            fullname = "{%s}%s" %(self._namespace, self.__class__.__name__)
+        else:
+            fullname = self.__class__.__name__
+        root = etree.Element("root")
+        self.to_xml(root, fullname)
+        f = open(fname, "w")
+        f.write(etree.tostring(root[0]))
+        f.close()
+
+    @classmethod
+    def from_file(cls, fname):
+        """
+            Create an instance from file.
+
+            Parameters
+            ----------
+            fname : str
+                Filename to parse.
+
+            Returns
+            -------
+            out : new instance
+        """
+        f = open(fname)
+        s = f.read()
+        f.close()
+        root = etree.fromstring(s)
+        inst = cls()
+        return inst.from_xml(root)
 
 class ComplexTypeMeta(type):
     """
@@ -288,6 +351,12 @@ class ComplexTypeMeta(type):
             newBases.append(XMLType)
             bases = tuple(newBases)
 
+        #propagate other non-reserved atributes
+        for k in attributes.keys():
+            if k not in ("_children", "__init__", "__doc__",
+                    "__ne__", "__eq__", "__str__", "__repr__"):
+                clsDict[k] = attributes[k]
+
         #create new type
         return type.__new__(cls, name, bases, clsDict)
 
@@ -349,10 +418,10 @@ class XMLAny(XMLType, str):
 
     def from_xml(self, element):
         #try to find types
-        type = element.get('{%s}type' %NS_XSI, None)
+        type = element.get('{%s}type' %xmlnamespace.NS_XSI, None)
         if type is None:
             return element
-        type = get_local_name(type)
+        type = xmlnamespace.get_local_name(type)
         type_class = self._types.get(type, None)
         if type_class is not None:
             res = type_class()
@@ -411,3 +480,71 @@ class XMLDateTime(XMLType):
         if pos != -1:
             text = text[:pos]
         return datetime.strptime(text, '%Y-%m-%dT%H:%M:%S.%f')
+
+class XMLStringEnumeration(XMLType):
+    _allowedValues = []
+    def __init__(self, *arg):
+        if len(arg) == 0:
+            self.value = ""
+        else:
+            self.value = str(arg[0])
+
+    def to_xml(self, parent, name):
+        #putting this check here is a hack, to allow the complex type conversion to work properly here, since
+        #it creates an instance
+        if self.value not in self._allowedValues:
+            raise ValueError("Not allowed value for this enumeration: value = %s" %(self.value))
+        element = etree.SubElement(parent, name)
+        element.text = unicode(self.value)
+
+    def from_xml(self, element):
+        val = ""
+        if element.text:
+            val = element.text.encode('utf-8')
+        if val not in self._allowedValues:
+            raise ValueError("Not allowed value for this enumeration: value = %s" %(val))
+        return val
+
+#a map of primitive types
+primmap = {  'anyType'                                 : XMLAny,
+             '{%s}anyType' %xmlnamespace.NS_XSD        : XMLAny,
+             'boolean'                                 : XMLBoolean,
+             '{%s}boolean' %xmlnamespace.NS_XSD        : XMLBoolean,
+             'decimal'                                 : XMLDecimal,
+             '{%s}decimal' %xmlnamespace.NS_XSD        : XMLDecimal,
+             'int'                                     : XMLInteger,
+             '{%s}int' %xmlnamespace.NS_XSD            : XMLInteger,
+             'integer'                                 : XMLInteger,
+             '{%s}integer' %xmlnamespace.NS_XSD        : XMLInteger,
+             'positiveInteger'                         : XMLInteger,
+             '{%s}positiveInteger' %xmlnamespace.NS_XSD: XMLInteger,
+             'unsignedInt'                             : XMLInteger,
+             '{%s}unsignedInt' %xmlnamespace.NS_XSD    : XMLInteger,
+             'short'                                   : XMLInteger,
+             '{%s}short' %xmlnamespace.NS_XSD          : XMLInteger,
+             'byte'                                    : XMLInteger,
+             '{%s}byte' %xmlnamespace.NS_XSD           : XMLInteger,
+             'long'                                    : XMLInteger,
+             '{%s}long' %xmlnamespace.NS_XSD           : XMLInteger,
+             'float'                                   : XMLDouble,
+             '{%s}float' %xmlnamespace.NS_XSD          : XMLDouble,
+             'double'                                  : XMLDouble,
+             '{%s}double' %xmlnamespace.NS_XSD         : XMLDouble,
+             'string'                                  : XMLString,
+             '{%s}string' %xmlnamespace.NS_XSD         : XMLString,
+             'base64Binary'                            : XMLString,
+             '{%s}base64Binary' %xmlnamespace.NS_XSD   : XMLString,
+             'anyURI'                                  : XMLString,
+             '{%s}anyURI' %xmlnamespace.NS_XSD         : XMLString,
+             'language'                                : XMLString,
+             '{%s}language' %xmlnamespace.NS_XSD       : XMLString,
+             'token'                                   : XMLString,
+             '{%s}token' %xmlnamespace.NS_XSD          : XMLString,
+             'date'                                    : XMLDate,
+             '{%s}date' %xmlnamespace.NS_XSD           : XMLDate,
+             'dateTime'                                : XMLDateTime,
+             '{%s}dateTime' %xmlnamespace.NS_XSD       : XMLDateTime,
+             # FIXME: probably timedelta, but needs parsing.
+             # It looks like P29DT23H54M58S
+             'duration'                                : XMLString,
+             '{%s}duration' %xmlnamespace.NS_XSD       : XMLString}

@@ -1,10 +1,14 @@
 """
     Classes required for remote method calls: messages and method wrappers.
 """
-from soap import *
-from exceptions import ValueError, RuntimeError
+import xmlnamespace
 from urllib2 import urlopen, Request, HTTPError
 import xml.etree.cElementTree as etree
+
+#some standard stuff
+SOAP_BODY = '{%s}Body' % xmlnamespace.NS_SOAP_ENV
+SOAP_FAULT = '{%s}Fault' % xmlnamespace.NS_SOAP_ENV
+SOAP_HEADER = '{%s}Header' % xmlnamespace.NS_SOAP_ENV
 
 class Message(object):
     """
@@ -73,7 +77,7 @@ class Message(object):
                      array = '[]'
                 if child['min']==0:
                     opt = '| None'
-                type = get_local_type(child['type'].__name__)
+                type = xmlnamespace.get_local_name(child['type'].__name__)
                 res = res + ', %s%s %s %s'\
                         %(type, array, child["name"], opt)
         elif switch == "keyword":
@@ -85,7 +89,7 @@ class Message(object):
                      array = '[]'
                 if child['min']==0:
                     opt = '| None'
-                type = get_local_type(child['type'].__name__)
+                type = xmlnamespace.get_local_name(child['type'].__name__)
                 res = res + ', %s=%s%s %s'\
                         %(child['name'], type, array, opt)
         elif switch == 'out' and len(p._children) == 1:
@@ -97,7 +101,7 @@ class Message(object):
                  array = '[]'
             if child['min']==0:
                 opt = '| None'
-            type = get_local_type(child['type'].__name__)
+            type = xmlnamespace.get_local_name(child['type'].__name__)
             res = '%s%s %s %s'  %(type, array, 'result', opt)
         else:
             res = '%s %s' %(p.__name__, 'msg')
@@ -222,7 +226,10 @@ class Method(object):
                 Specifies which form to return: wrap, positional, keyword.
         """
         input_msg = self.input.__str__(switch = switch)
-        output_msg = self.output.__str__(switch = 'out')
+        if self.output is None:
+            output_msg = ""
+        else:
+            output_msg = self.output.__str__(switch = 'out')
 
         return '%s = %s(%s)' %(output_msg, self.name, input_msg)
 

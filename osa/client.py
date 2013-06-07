@@ -2,8 +2,9 @@
     Top level access to SOAP service.
 """
 
-import wsdl
+import xmlnamespace
 import xmltypes
+import wsdl
 
 def str_for_containers(self):
     """
@@ -72,10 +73,11 @@ class Client(object):
         The content of these containers is set from results of parsing
         the wsdl document by
         `osa.wsdl.WSDLParser.get_types` and
-        `osa.wsdl.WSDLParser.get_methods` correspondingly.
+        `osa.wsdl.WSDLParser.get_services` correspondingly.
+        See also `osa.wsdl.WSDLParser.parse`.
 
         The client.types container consists of auto generated (by
-        `osa.wsdl.WSDLParser`)
+        `osa.xmlschema.XMLSchemaParser`)
         class definitions. So that a call to a member returns and instance
         of the new type. New types are auto-generated according to a special
         convention by metaclass `osa.xmltypes.ComplexTypeMeta`.
@@ -98,39 +100,82 @@ class Client(object):
         #create parser and download the WSDL document
         self.wsdl_url = wsdl_url
         parser = wsdl.WSDLParser(wsdl_url)
-        #before getting types we handle anyType
-        #anyType is somewhat tricky, because it must
-        #know all the other types to work, therefore
-        #we recreate it here. In such a way all other
-        #service do not conflict with this instance
-        primmap = wsdl._primmap.copy()
-        primmap['anyType'] = type('XMLAny', (xmltypes.XMLAny,), {})
-        #get all types - a dictionary
-        types = parser.get_types(primmap)
-        primmap['anyType']._types = types.copy()
-        del primmap
-        #get all methods - a dictionary
-        methods = parser.get_methods(types)
-        #create dispatchers for types and methods
-        #first provide nice printing
+        self._types, self._services = parser.parse()
+        self.names = []
+        self.create_types_container()
+        self.create_services_containers()
+
+        return
+
+    def create_types_container(self):
+        """
+            Create types container class for easy access.
+
+            As a result of this method, self.types contains
+            all the defined classes with their short names,
+            i.e. without namespace prefix. If a name collision
+            is detected, the second and all consecutive classes
+            are appended with a counter.
+        """
+        types = {}
+        for k, v in self._types.items():
+            short_name = xmlnamespace.get_local_name(k)
+            if types.has_key(short_name):
+                counter = 1
+                while True:
+                    new_name = "%s_%d" %(short_name, counter)
+                    counter += 1
+                    if not(types.has_key(new_name)):
+                        short_name = new_name
+                        break
+            types[short_name] = v
         types["_container"] = types.keys()
-        methods["_container"] = methods.keys()
         types["__str__"] = str_for_containers
         types["__repr__"] = str_for_containers
-        methods["__str__"] = str_for_containers
-        methods["__repr__"] = str_for_containers
         self.types = type('TypesDispatcher', (), types)()
-        del types
-        self.service = type('ServiceDispatcher', (), methods)()
-        del methods
-        #get service names for printing
-        self.names = parser.get_service_names()
+
+    def create_services_containers(self):
+        """
+            Create methods containers for easy access.
+
+            As a result of this method, self.service
+            with available operations is created. If
+            there are several services in the supplied
+            wsdl, than self.service_1, self.service_2
+            are created.
+        """
+        def create(name, attr_name, methods):
+            """
+                Do create.
+
+                Parameters
+                ----------
+                name : nice server name
+                attr_name : hot to attach service, i.e. self.service_1
+                methods : dict of service methods
+            """
+            methods["_container"] = methods.keys()
+            methods["__str__"] = str_for_containers
+            methods["__repr__"] = str_for_containers
+            setattr(self, attr_name,
+                    type('ServiceDispatcher', (), methods)())
+            self.names.append("%s %s" %(attr_name, name))
+
+        if len(self._services.keys()) == 1:
+            create(self._services.keys()[0], "service",
+                   self._services.items()[0][1])
+        else:
+            counter = 1
+            for k, v in self._services.items():
+                attr_name = "service_%d" %counter
+                counter += 1
+                create(k, attr_name, v)
 
     def __str__(self):
         res = ''
         for name in self.names:
             res = res + ', %s' %name
-        res = res[2:] + " at:\n\t%s" %(self.wsdl_url)
+        res = res[2:] + " from:\n\t%s" %(self.wsdl_url)
         return res
 
     def __repr__(self):

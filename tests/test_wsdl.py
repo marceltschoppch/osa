@@ -15,13 +15,13 @@ from osa.wsdl import WSDLParser, _primmap
 from osa.methods import Method
 from osa.xmltypes import *
 
-wsdl_url = 'http://lxpowerboz:88/services/python/HelloWorldService?wsdl'
+wsdl_url = 'test.wsdl'
 
 class TestWSDL(unittest.TestCase):
     def test_reading(self):
         w = WSDLParser(wsdl_url)
         self.assertEquals(w.wsdl_url, wsdl_url)
-        self.assertEquals(w.tns, 'helloworldservice.soaplib.boz.hgw.ipp.mpg.de')
+        self.assertEquals(w.tns, "de.mpg.ipp.hgw.boz.gsoap.helloworld")
         self.assertEquals(type(w.wsdl), type(etree.Element('root')))
 
     def test_service_name(self):
@@ -39,7 +39,7 @@ class TestWSDL(unittest.TestCase):
         self.assertTrue('sayHello' in types.keys())
         self.assertTrue('echoStringResponse' in types.keys())
         self.assertTrue('faultyThingResponse' in types.keys())
-        self.assertTrue('testMeResponse' in types.keys())
+        #self.assertTrue('testMeResponse' in types.keys())
         self.assertTrue('sayHelloResponse' in types.keys())
         self.assertTrue(types['Name'], 'firstName')
         self.assertTrue(types['Name'], 'lastName')
@@ -47,10 +47,10 @@ class TestWSDL(unittest.TestCase):
         self.assertTrue(types['Person'], 'age')
         self.assertTrue(types['Person'], 'height')
         self.assertTrue(types['Person'], 'weight')
-        self.assertTrue(types['Person']._children[0]['name'] == "name")
-        self.assertTrue(types['Person']._children[2]['name'] == "age")
-        self.assertTrue(types['Person']._children[0]['type'] == types['Name'])
-        self.assertTrue(types['Person']._children[2]['type'] == types['int'])
+        self.assertTrue(types['Person']._children[3]['name'] == "name")
+        self.assertTrue(types['Person']._children[0]['name'] == "age")
+        self.assertTrue(types['Person']._children[3]['type'] == types['Name'])
+        self.assertTrue(types['Person']._children[0]['type'] == types['int'])
         self.assertTrue(types['sayHello'], 'person')
         self.assertTrue(types['sayHello'], 'times')
         self.assertTrue(types['sayHello']._children[0]['name'] == "person")
