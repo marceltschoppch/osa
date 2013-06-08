@@ -189,6 +189,11 @@ class XMLType(object):
             for single in val:
                 try:
                     single.to_xml(element, full_name)
+                    if child["type"] is XMLAny:
+                        #append type information
+                        element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
+                                "{%s}%s" %(single._namespace,
+                                           single.__class__.__name__) )
                 except Exception:
                     single = child['type'](single)
                     single.to_xml(element, full_name)
@@ -421,7 +426,6 @@ class XMLAny(XMLType, str):
         type = element.get('{%s}type' %xmlnamespace.NS_XSI, None)
         if type is None:
             return element
-        type = xmlnamespace.get_local_name(type)
         type_class = self._types.get(type, None)
         if type_class is not None:
             res = type_class()
@@ -548,3 +552,4 @@ primmap = {  'anyType'                                 : XMLAny,
              # It looks like P29DT23H54M58S
              'duration'                                : XMLString,
              '{%s}duration' %xmlnamespace.NS_XSD       : XMLString}
+XMLAny._types = primmap.copy()

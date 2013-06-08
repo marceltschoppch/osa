@@ -51,7 +51,9 @@ class WSDLParser(object):
         for schema in schemas:
             parser = xmlschema.XMLSchemaParser(schema)
             xtypes.update(parser.get_list_of_defined_types())
-        return xmlschema.XMLSchemaParser.convert_xmltypes_to_python(xtypes)
+        types =  xmlschema.XMLSchemaParser.convert_xmltypes_to_python(xtypes)
+        xmltypes.XMLAny._types.update(types)
+        return types
 
     def get_messages(self, types):
         """

@@ -143,7 +143,7 @@ class Method(object):
                     detail = fault.find('detail')
                     if detail is not None:
                         detail = detail.text or ''
-                    raise RuntimeError("SOAP Fault %s:%s <%s> %s%s"\
+                    raise RuntimeError("SOAP Fault %s: %s <%s> %s %s"\
                             %(self.location, self.name, code, string, detail))
                 else:
                     raise

@@ -340,7 +340,10 @@ class XMLSchemaParser(object):
         #find sequence/choice/all
         seq = None
         for str in ("sequence", "all", "choice"):
-            seq = element.find("./{%s}%s" %(xmlnamespace.NS_XSD, str))
+            #note deep search here, this is necessary for
+            #extensions that look like
+            #complexType->complexContent->extensions->sequence
+            seq = element.find(".//{%s}%s" %(xmlnamespace.NS_XSD, str))
             if seq is not None:
                 break
 
