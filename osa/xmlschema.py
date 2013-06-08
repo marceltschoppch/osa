@@ -35,6 +35,7 @@ class XMLSchemaParser(object):
         #find and initialize imported ones
         self.imported = [] 
         imports = self.schema.findall('.//{%s}import' %xmlnamespace.NS_XSD)
+        imports.extend(self.schema.findall('.//{%s}include' %xmlnamespace.NS_XSD))
         for schema in imports:
             loc = schema.get("schemaLocation", None)
             #basically says that types from that namespace will be used, no real
@@ -183,8 +184,15 @@ class XMLSchemaParser(object):
         elif element.tag == "{%s}simpleType" %xmlnamespace.NS_XSD and\
                 element[0].tag == "{%s}restriction" %xmlnamespace.NS_XSD \
                 and element[0].get("base", None) == "{%s}string" %xmlnamespace.NS_XSD \
+                and len(element[0])>0 \
                 and element[0][0].tag == "{%s}enumeration" %xmlnamespace.NS_XSD:
             XMLSchemaParser.create_string_enumeration(name, element, types)
+        elif element.tag == "{%s}simpleType" %xmlnamespace.NS_XSD and\
+                element[0].tag == "{%s}restriction" %xmlnamespace.NS_XSD \
+                and element[0].get("base", None) is not None:
+            base_type = element[0].get("base")
+            XMLSchemaParser.create_alias(name, base_type,
+                                         xtypes, types)
 
     @staticmethod
     def get_doc(x):
@@ -341,10 +349,27 @@ class XMLSchemaParser(object):
         if seq is not None:
             for s in seq:
                 #iterate over sequence, do not consider in place defs
-                type_name = s.get('type', None)
+                ref = s.get("ref", None) #reference to another element
+                if ref is not None:
+                    type_name = ref
+                    child_name = xmlnamespace.get_local_name(ref)
+                else:
+                    type_name = s.get('type', None)
+                    child_name = s.get('name', 'unknown')
+
                 if type_name is None:
-                    continue
-                elif xmltypes.primmap.has_key(type_name):
+                    compl = s.find("./{%s}complexType" %(xmlnamespace.NS_XSD))
+                    simpl = s.find("./{%s}simpleType" %(xmlnamespace.NS_XSD))
+                    if compl is not None:
+                        XMLSchemaParser.create_type(child_name, compl, xtypes, types)
+                        type_name = child_name
+                    elif simpl is not None:
+                        XMLSchemaParser.create_type(child_name, simpl, xtypes, types)
+                        type_name = child_name
+                    else:
+                        continue
+
+                if xmltypes.primmap.has_key(type_name):
                     type = xmltypes.primmap[type_name]
                 elif types.has_key(type_name):
                     type = types[type_name]
@@ -354,7 +379,6 @@ class XMLSchemaParser(object):
                     XMLSchemaParser.create_type(type_name,
                                     xtypes[type_name], xtypes, types)
                     type = types[type_name]
-                child_name = s.get('name', 'unknown')
                 minOccurs = int(s.get('minOccurs', 1))
                 maxOccurs = s.get('maxOccurs', 1)
                 if maxOccurs != 'unbounded':

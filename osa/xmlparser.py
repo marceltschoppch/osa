@@ -4,7 +4,7 @@
 import xml.etree.cElementTree as etree
 import urllib2
 
-default_attr = ["type", "base", "element", "message", "binding"]
+default_attr = ["type", "base", "element", "message", "binding", "ref"]
 
 def parse_qualified(f, attr = None):
     """

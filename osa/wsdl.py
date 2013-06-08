@@ -7,7 +7,6 @@ import xmlschema
 import xmltypes
 import message
 import method
-import methods
 import xml.etree.cElementTree as etree
 
 class WSDLParser(object):
