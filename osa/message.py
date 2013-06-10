@@ -1,3 +1,7 @@
+# message.py - Message class, part of osa.
+# Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
+# Licensed under GPLv3 or later, see the COPYING file.
+
 """
    Python class for input/output messages.
 """
