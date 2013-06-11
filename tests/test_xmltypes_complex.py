@@ -1,17 +1,20 @@
 #!/usr/bin/env python
+# test_xmltypes_complex.py - test serialization of compound classes, part of osa.
+# Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
+# Licensed under GPLv3 or later, see the COPYING file.
+
 import sys
 for x in sys.path:
     if x.find("osa") != -1:
         sys.path.remove(x)
-sys.path.append("../../")
+sys.path.append("../")
 
-import datetime
 import unittest
 
 import xml.etree.cElementTree as etree
 
 from osa.xmltypes import *
-from osa.soap import *
+from osa.xmlnamespace import *
 
 ns_test = 'test_namespace'
 
@@ -153,6 +156,22 @@ class TestClassSerializer(unittest.TestCase):
         self.assertEquals(a.lattitude, r.lattitude)
         self.assertEquals(a.longitude, r.longitude)
         self.assertEquals(a.since, r.since)
+    def test_tofrom_file(self):
+        fname = "out.xml"
+        a = Address()
+        a.street = '123 happy way'
+        a.city = 'badtown'
+        a.zip = 32
+        a.lattitude = 4.3
+        a.longitude = 88.0
+        try:
+            os.remove(fname)
+        except:
+            pass
+        a.to_file(fname)
+        b = Address.from_file(fname)
+        self.assertEquals(b, a)
+        self.assertTrue(b is not a)
 
 if __name__ == '__main__':
     unittest.main()

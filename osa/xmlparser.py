@@ -78,7 +78,7 @@ def parse_qualified_from_url(url, attr = None):
         page_handler = urllib2.urlopen(url)
     else:
         page_handler = open(url, "r")
-    root = parse_qualified(page_handler)
+    root = parse_qualified(page_handler, attr=attr)
     page_handler.close()
     del page_handler
     return root

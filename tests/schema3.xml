@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+ <schema targetNamespace="sever" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified" attributeFormDefault="unqualified">
+  <complexType name="Car">
+   <sequence>
+     <element name="model" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="weight" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+   </sequence>
+  </complexType>
+</schema>

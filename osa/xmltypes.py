@@ -320,8 +320,8 @@ class ComplexTypeMeta(type):
                 Attributes of the new type.
         """
         #list of children, even if empty, must be always present
-        if "_children" not in attributes:
-            raise ValueError("_children attribute must be present")
+        if not(attributes.has_key("_children")):
+            attributes["_children"] = []
 
         #create dictionary for initializing class arguments
         clsDict = {}

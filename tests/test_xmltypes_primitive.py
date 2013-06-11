@@ -1,17 +1,18 @@
 #!/usr/bin/env python
+# test_xmltypes_primitive.py - test serialization of primitive classes, part of osa.
+# Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
+# Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
 for x in sys.path:
     if x.find("osa") != -1:
         sys.path.remove(x)
-sys.path.append("../../")
-
-import datetime
-import unittest
-
-import xml.etree.cElementTree as etree
+sys.path.append("../")
 
 from osa.xmltypes import *
+from datetime import datetime
+import unittest
+import xml.etree.cElementTree as etree
 
 ns_test = 'test_namespace'
 
@@ -145,6 +146,33 @@ class TestPrimitive(unittest.TestCase):
         b.text = ''
         b = XMLBoolean().from_xml(b)
         self.assertEquals(b, None)
+
+    def test_any(self):
+        #test any from_xml, the other way is
+        #should not be used in real life in any case
+        element = etree.Element('test')
+        element.text = "10.0"
+
+        #no type => xml
+        inst = XMLAny()
+        v = inst.from_xml(element)
+        self.assertEquals(type(v).__name__ , "Element")
+
+        #float
+        element.set("{%s}type" %xmlnamespace.NS_XSI, "{%s}float" %xmlnamespace.NS_XSD)
+        v = inst.from_xml(element)
+        self.assertEquals(v.__class__.__name__, "float")
+        self.assertEquals(v, 10.0)
+
+        #string
+        element.set("{%s}type" %xmlnamespace.NS_XSI, "{%s}string" %xmlnamespace.NS_XSD)
+        v = inst.from_xml(element)
+        self.assertEquals(v.__class__.__name__, "str")
+        self.assertEquals(v, "10.0")
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

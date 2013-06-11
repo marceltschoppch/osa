@@ -26,10 +26,14 @@ class Message(object):
             List of message parts in the form
             (part name, part type class).
             This description is usually found in message part of a WSDL document.
+            Note, that due to binding section not all message parts are used for encoding.
+            The parts that are used are given be use_parts.
         use_parts : list
             List of parts to be really used for encoding/decoding.
-            This comes from wsdl binding section. Yes, they not
+            This comes from wsdl binding section. Yes, they are not
             quite from this planet.
+            In any case, in the present implementation I assume doc/literal wrapped and
+            use only the very first part from this member for encoding.
     """
     def __init__(self, name, parts, use_parts=None):
         self.name = name
@@ -119,12 +123,13 @@ class Message(object):
             #etree.SubElement(kw["_body"], self.name)
             return
         #assumed wrapped convention
-        p = self.use_parts[0][1]() #encoding instance
+        cl = self.use_parts[0][1] #class
+        p = cl() #encoding instance
 
         #wrapped message is supplied
-        if len(arg) == 1 and isinstance(arg[0], self.parts[0][1]):
+        if len(arg) == 1 and isinstance(arg[0], cl):
             for child in getattr(p, "_children", []):
-                setattr(p, child['name'], getattr(arg[0], child['name'], None))
+                p = arg[0]
         else:
             #reconstruct wrapper from expanded input
             counter = 0
@@ -146,6 +151,8 @@ class Message(object):
                                                                     %name)
                 setattr(p, name, val)
 
+        #set default ns to save space
+        etree.register_namespace("", xmlnamespace.get_ns(self.name))
         #the real conversion is done by ComplexType
         p.to_xml(kw["_body"], "{%s}%s" %(p._namespace, p.__class__.__name__))
 

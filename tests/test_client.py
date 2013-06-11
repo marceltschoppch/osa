@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# test_client.py - test Client class, part of osa.
+# Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
+# Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
 for x in sys.path:
@@ -6,74 +9,77 @@ for x in sys.path:
         sys.path.remove(x)
 sys.path.append("../")
 
-import datetime
 import unittest
-
 import xml.etree.cElementTree as etree
-
-from osa.client import Client
-from osa.wsdl import WSDLParser, _primmap
-from osa.methods import Method
+from osa.client import *
+from osa.wsdl import *
+from osa.method import *
 from osa.xmltypes import *
+import urllib2
 
 wsdl_url = 'http://lxpowerboz:88/services/python/HelloWorldService?wsdl'
 
 class TestClient(unittest.TestCase):
+    def setUp(self):
+        self.client = Client("test.wsdl")
+    def tearDown(self):
+        self.client = None
     def test_init(self):
-        cl = Client(wsdl_url)
-        self.assertEquals(cl.wsdl_url, wsdl_url)
-        self.assertEquals(cl.names, ["HelloWorldService",])
+        self.assertEquals(self.client.names, ["service HelloWorldService",])
         for t in ("Person", "Name", "echoString", "sayHello"):
-            self.assertTrue(hasattr(cl.types, t))
-            self.assertEquals(type(getattr(cl.types, t)), ComplexTypeMeta)
-            self.assertTrue(t in cl.types.anyType._types.keys())
+            self.assertTrue(hasattr(self.client.types, t))
+            self.assertEquals(type(getattr(self.client.types, t)), ComplexTypeMeta)
         for method in ("testMe", "giveMessage", "echoString", "sayHello", "faultyThing"):
-            self.assertTrue(hasattr(cl.service, method))
-            self.assertEquals(type(getattr(cl.service, method)), Method)
+            self.assertTrue(hasattr(self.client.service, method))
+            self.assertEquals(type(getattr(self.client.service, method)), Method)
 
-    def test_testme(self):
-        #note: giveMessage is broken at the server side
-        cl = Client(wsdl_url)
-        res = cl.service.testMe()
-        self.assertEqual(type(res), cl.types.testMeResponse)
+    def test_giveMessage(self):
+        try:
+            urllib2.urlopen("http://lxpowerboz:88")
+        except urllib2.HTTPError:
+            pass
+        except urllib2.URLError:
+            return
+        res = self.client.service.giveMessage()
+        self.assertTrue(isinstance(res, str))
 
     def test_echoString(self):
-        cl = Client(wsdl_url)
-
-        self.assertEquals('my message 1', cl.service.echoString('my message 1'))
-        self.assertEquals('my message 2', cl.service.echoString(msg = 'my message 2'))
-        m = cl.types.echoString()
-        m.msg = 'my message 3'
-        self.assertEquals('my message 3', cl.service.echoString(m))
+        try:
+            urllib2.urlopen("http://lxpowerboz:88")
+        except urllib2.HTTPError:
+            pass
+        except urllib2.URLError:
+            return
+        self.assertEquals('my message 1', self.client.service.echoString('my message 1'))
 
     def test_sayHello(self):
-        cl = Client(wsdl_url)
-
-        n = cl.types.Name()
+        try:
+            urllib2.urlopen("http://lxpowerboz:88")
+        except urllib2.HTTPError:
+            pass
+        except urllib2.URLError:
+            return
+        n = self.client.types.Name()
         n.firstName = "first"
         n.lastName = "last"
-        p = cl.types.Person()
+        p = self.client.types.Person()
         p.name = n
         p.age = 30
         p.weight = 80
         p.height = 175
-
-        self.assertEquals(['Hello, first']*5, cl.service.sayHello(p, 5))
-        self.assertEquals(['Hello, first']*8, cl.service.sayHello(person = p, times = 8))
-        m = cl.types.sayHello()
-        m.person = p
-        m.times = 10
-        self.assertEquals(['Hello, first']*10, cl.service.sayHello(m))
+        self.assertEquals(['Hello, first\n']*5, self.client.service.sayHello(p, 5))
 
     def test_faultyThing(self):
-        cl = Client(wsdl_url)
-        self.assertRaises(RuntimeError, cl.service.faultyThing)
         try:
-            cl.service.faultyThing()
+            urllib2.urlopen("http://lxpowerboz:88")
+        except urllib2.HTTPError:
+            pass
+        except urllib2.URLError:
+            return
+        try:
+            self.client.service.faultyThing()
         except RuntimeError as e:
             self.assertFalse(str(e).find('4u!') == -1)
-
-
 
 
 if __name__ == '__main__':

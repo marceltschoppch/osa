@@ -195,8 +195,7 @@ class XMLSchemaParser(object):
                 element[0].tag == "{%s}restriction" %xmlnamespace.NS_XSD \
                 and element[0].get("base", None) is not None:
             base_type = element[0].get("base")
-            XMLSchemaParser.create_alias(name, base_type,
-                                         xtypes, types)
+            XMLSchemaParser.create_alias(name, base_type, xtypes, types)
 
     @staticmethod
     def get_doc(x):
@@ -250,6 +249,7 @@ class XMLSchemaParser(object):
             alias = types[alias_type]
         cls_name = xmlnamespace.get_local_name(name)
         cls_ns = xmlnamespace.get_ns(name)
+        #create new type since the namespace may be different
         cls = type(cls_name, (alias,), {"__doc__":"no documentation",
                                   "_namespace":cls_ns})
         types[name] = cls
@@ -381,7 +381,7 @@ class XMLSchemaParser(object):
                 elif types.has_key(type_name):
                     type = types[type_name]
                 elif not(xtypes.has_key(type_name)):
-                    raise ValueError("Type not found in schema for:\n %s" %(etree.tostring(element)))
+                    raise ValueError("Type %s not found for:\n %s" %(type_name,etree.tostring(element)))
                 else:
                     XMLSchemaParser.create_type(type_name,
                                     xtypes[type_name], xtypes, types)

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# test_wsdl.py - test WSDLParser class, part of osa.
+# Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
+# Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
 for x in sys.path:
@@ -6,16 +9,16 @@ for x in sys.path:
         sys.path.remove(x)
 sys.path.append("../")
 
-import datetime
 import unittest
-
 import xml.etree.cElementTree as etree
-
-from osa.wsdl import WSDLParser, _primmap
-from osa.methods import Method
+from osa.wsdl import *
+from osa.method import * 
+from osa.message import * 
 from osa.xmltypes import *
 
 wsdl_url = 'test.wsdl'
+ns1 = "de.mpg.ipp.hgw.boz.gsoap.helloworld"
+ns2 = "de.mpg.ipp.hgw.boz.gsoap.helloworld.types"
 
 class TestWSDL(unittest.TestCase):
     def test_reading(self):
@@ -24,140 +27,120 @@ class TestWSDL(unittest.TestCase):
         self.assertEquals(w.tns, "de.mpg.ipp.hgw.boz.gsoap.helloworld")
         self.assertEquals(type(w.wsdl), type(etree.Element('root')))
 
-    def test_service_name(self):
+    def test_get_types(self):
         w = WSDLParser(wsdl_url)
-        self.assertEquals(w.get_service_names(), ["HelloWorldService"])
+        types = w.get_types()
+        self.assertTrue('{%s}Name' %ns2 in types.keys())
+        self.assertTrue('{%s}Person' %ns2 in types.keys())
+        self.assertTrue('{%s}echoString' %ns1 in types.keys())
+        self.assertTrue('{%s}faultyThing' %ns1 in types.keys())
+        self.assertTrue('{%s}testMe' %ns1 in types.keys())
+        self.assertTrue('{%s}sayHello' %ns1 in types.keys())
+        self.assertTrue('{%s}echoStringResponse' %ns1 in types.keys())
+        self.assertTrue('{%s}faultyThingResponse' %ns1 in types.keys())
+        self.assertTrue('{%s}sayHelloResponse' %ns1 in types.keys())
+        self.assertTrue(types['{%s}Name' %ns2], 'firstName')
+        self.assertTrue(types['{%s}Name' %ns2], 'lastName')
+        self.assertTrue(types['{%s}Person' %ns2], 'name')
+        self.assertTrue(types['{%s}Person' %ns2], 'age')
+        self.assertTrue(types['{%s}Person' %ns2], 'height')
+        self.assertTrue(types['{%s}Person' %ns2], 'weight')
+        self.assertTrue(types['{%s}Person' %ns2]._children[3]['name'] == "name")
+        self.assertTrue(types['{%s}Person' %ns2]._children[0]['name'] == "age")
+        self.assertTrue(types['{%s}Person' %ns2]._children[3]['type'] == types['{%s}Name' %ns2])
+        self.assertTrue(types['{%s}Person' %ns2]._children[0]['type'] == xmltypes.XMLInteger)
+        self.assertTrue(types['{%s}sayHello' %ns1], 'person')
+        self.assertTrue(types['{%s}sayHello' %ns1], 'times')
+        self.assertTrue(types['{%s}sayHello' %ns1]._children[0]['name'] == "person")
+        self.assertTrue(types['{%s}sayHello' %ns1]._children[1]['name'] == "times")
+        self.assertTrue(types['{%s}sayHello' %ns1]._children[0]['type'] == types['{%s}Person' %ns2])
+        self.assertTrue(types['{%s}sayHello' %ns1]._children[1]['type'] == xmltypes.XMLInteger)
 
-    def test_conversions(self):
+    def test_get_messages(self):
         w = WSDLParser(wsdl_url)
-        types = w.get_types(_primmap)
-        self.assertTrue('Name' in types.keys())
-        self.assertTrue('Person' in types.keys())
-        self.assertTrue('echoString' in types.keys())
-        self.assertTrue('faultyThing' in types.keys())
-        self.assertTrue('testMe' in types.keys())
-        self.assertTrue('sayHello' in types.keys())
-        self.assertTrue('echoStringResponse' in types.keys())
-        self.assertTrue('faultyThingResponse' in types.keys())
-        #self.assertTrue('testMeResponse' in types.keys())
-        self.assertTrue('sayHelloResponse' in types.keys())
-        self.assertTrue(types['Name'], 'firstName')
-        self.assertTrue(types['Name'], 'lastName')
-        self.assertTrue(types['Person'], 'name')
-        self.assertTrue(types['Person'], 'age')
-        self.assertTrue(types['Person'], 'height')
-        self.assertTrue(types['Person'], 'weight')
-        self.assertTrue(types['Person']._children[3]['name'] == "name")
-        self.assertTrue(types['Person']._children[0]['name'] == "age")
-        self.assertTrue(types['Person']._children[3]['type'] == types['Name'])
-        self.assertTrue(types['Person']._children[0]['type'] == types['int'])
-        self.assertTrue(types['sayHello'], 'person')
-        self.assertTrue(types['sayHello'], 'times')
-        self.assertTrue(types['sayHello']._children[0]['name'] == "person")
-        self.assertTrue(types['sayHello']._children[1]['name'] == "times")
-        self.assertTrue(types['sayHello']._children[0]['type'] == types['Person'])
-        self.assertTrue(types['sayHello']._children[1]['type'] == types['int'])
-        methods = w.get_methods(types)
-        self.assertTrue('testMe' in methods.keys())
-        self.assertTrue('giveMessage' in methods.keys())
-        self.assertTrue('echoString' in methods.keys())
-        self.assertTrue('sayHello' in methods.keys())
-        self.assertTrue('faultyThing' in methods.keys())
-        self.assertTrue(isinstance(methods['testMe'], Method))
-        self.assertTrue(isinstance(methods['giveMessage'], Method))
-        self.assertTrue(isinstance(methods['echoString'], Method))
-        self.assertTrue(isinstance(methods['sayHello'], Method))
-        self.assertTrue(isinstance(methods['faultyThing'], Method))
+        types = w.get_types()
+        msgs = w.get_messages(types)
+        names = ("testMe", "giveMessageRequest",
+                 "giveMessageResponse", "echoStringRequest",
+                 "echoStringResponse", "faultyThingRequest",
+                 "faultyThingResponse", "sayHello",
+                 "sayHelloResponse")
+        for n in names:
+            self.assertTrue(msgs.has_key("{%s}%s" %(ns1, n)))
+            m = msgs["{%s}%s" %(ns1, n)]
+            self.assertTrue(isinstance(m, Message))
+            self.assertEquals(m.name, "{%s}%s" %(ns1, n))
+            self.assertEquals(len(m.parts), 1)
+            self.assertEquals(len(m.parts[0]), 2)
+            self.assertEquals(m.parts[0][0], "parameters")
 
-    def test_methods(self):
+    def test_get_operations(self):
         w = WSDLParser(wsdl_url)
-        types = w.get_types(_primmap)
-        methods = w.get_methods(types)
+        types = w.get_types()
+        msgs = w.get_messages(types)
+        ops = w.get_operations(msgs)
+        self.assertTrue(ops.has_key("{%s}HelloWorldServicePortType" %ns1))
+        ops = ops["{%s}HelloWorldServicePortType" %ns1]
+        names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
+        for n in names:
+            self.assertTrue(ops.has_key(n))
+            op = ops[n]
+            self.assertTrue(isinstance(op, Method))
+            self.assertTrue(isinstance(op.input, Message))
+            if n != "testMe":
+                self.assertTrue(isinstance(op.output, Message))
 
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['testMe'].input.to_xml(_body = root)
-        self.assertEquals(len(root), 1)
+        self.assertTrue(ops["testMe"].input is msgs["{%s}testMe" %ns1])
+        self.assertTrue(ops["giveMessage"].input is msgs["{%s}giveMessageRequest" %ns1])
+        self.assertTrue(ops["giveMessage"].output is msgs["{%s}giveMessageResponse" %ns1])
+        self.assertTrue(ops["echoString"].input is msgs["{%s}echoStringRequest" %ns1])
+        self.assertTrue(ops["echoString"].output is msgs["{%s}echoStringResponse" %ns1])
+        self.assertTrue(ops["faultyThing"].input is msgs["{%s}faultyThingRequest" %ns1])
+        self.assertTrue(ops["faultyThing"].output is msgs["{%s}faultyThingResponse" %ns1])
+        self.assertTrue(ops["sayHello"].input is msgs["{%s}sayHello" %ns1])
+        self.assertTrue(ops["sayHello"].output is msgs["{%s}sayHelloResponse" %ns1])
 
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['giveMessage'].input.to_xml(_body = root)
-        self.assertEquals(len(root), 1)
+    def test_get_bindings(self):
+        w = WSDLParser(wsdl_url)
+        types = w.get_types()
+        msgs = w.get_messages(types)
+        ops = w.get_operations(msgs)
+        bs = w.get_bindings(ops)
+        ops = ops["{%s}HelloWorldServicePortType" %ns1]
+        self.assertTrue(bs.has_key("{%s}HelloWorldService" %ns1))
+        bs = bs["{%s}HelloWorldService" %ns1]
+        names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
+        for n in names:
+            self.assertTrue(bs.has_key(n))
+            b = bs[n]
+            op = ops[n]
+            self.assertTrue(b is op)
+            self.assertTrue(b.input.use_parts is not None)
+            self.assertEquals(len(b.input.use_parts), 1)
+            self.assertEquals(b.input.use_parts[0][0], "parameters")
+            if n != "testMe":
+                self.assertEquals(len(b.output.use_parts), 1)
+                self.assertEquals(b.output.use_parts[0][0], "parameters")
+            self.assertEquals(b.action, "")
 
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['faultyThing'].input.to_xml(_body = root)
-        self.assertEquals(len(root), 1)
+    def test_get_services(self):
+        w = WSDLParser(wsdl_url)
+        types = w.get_types()
+        msgs = w.get_messages(types)
+        ops = w.get_operations(msgs)
+        bs = w.get_bindings(ops)
+        ss = w.get_services(bs)
+        bs = bs["{%s}HelloWorldService" %ns1]
+        self.assertTrue(ss.has_key("HelloWorldService"))
+        ss = ss["HelloWorldService"]
+        names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
+        for n in names:
+            self.assertTrue(ss.has_key(n))
+            s = ss[n]
+            b = bs[n]
+            self.assertTrue(s is b)
+            self.assertEquals(s.location, "http://lxpowerboz:88/services/cpp/HelloWorldService")
 
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['echoString'].input.to_xml(msg = 'message', _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals('message', XMLString().from_xml(root[0][0]))
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['echoString'].input.to_xml('message', _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals('message', XMLString().from_xml(root[0][0]))
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        mm = types['echoString']()
-        mm.msg = 'message'
-        methods['echoString'].input.to_xml(mm, _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals('message', XMLString().from_xml(root[0][0]))
-
-        n = types['Name']()
-        n.firstName = "first"
-        n.lastName = "last"
-        p = types['Person']()
-        p.name = n
-        p.age = 30
-        p.weight = 80
-        p.height = 175
-        t = 5
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['sayHello'].input.to_xml(person = p, times = t, _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(len(root[0]), 2)
-        rp = types['Person']().from_xml(root[0][0])
-        rt = types['int']().from_xml(root[0][1])
-        self.assertEquals(rt, t)
-        self.assertEquals(rp.age, p.age)
-        self.assertEquals(rp.weight, p.weight)
-        self.assertEquals(rp.height, p.height)
-        self.assertEquals(rp.name.firstName, p.name.firstName)
-        self.assertEquals(rp.name.lastName, p.name.lastName)
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        methods['sayHello'].input.to_xml( p, t, _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(len(root[0]), 2)
-        rp = types['Person']().from_xml(root[0][0])
-        rt = types['int']().from_xml(root[0][1])
-        self.assertEquals(rt, t)
-        self.assertEquals(rp.age, p.age)
-        self.assertEquals(rp.weight, p.weight)
-        self.assertEquals(rp.height, p.height)
-        self.assertEquals(rp.name.firstName, p.name.firstName)
-        self.assertEquals(rp.name.lastName, p.name.lastName)
-        root = etree.Element('root')
-        self.assertEquals(len(root), 0)
-        mm = types['sayHello']()
-        mm.person = p
-        mm.times = t
-        methods['sayHello'].input.to_xml(mm, _body = root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(len(root[0]), 2)
-        rp = types['Person']().from_xml(root[0][0])
-        rt = types['int']().from_xml(root[0][1])
-        self.assertEquals(rt, t)
-        self.assertEquals(rp.age, p.age)
-        self.assertEquals(rp.weight, p.weight)
-        self.assertEquals(rp.height, p.height)
-        self.assertEquals(rp.name.firstName, p.name.firstName)
-        self.assertEquals(rp.name.lastName, p.name.lastName)
 
 if __name__ == '__main__':
     unittest.main()

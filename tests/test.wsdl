@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="HelloWorldService" targetNamespace="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns:tns="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns2="de.mpg.ipp.hgw.boz.gsoap.helloworld.types" xmlns:ns1="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/" xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+ <schema targetNamespace="de.mpg.ipp.hgw.boz.gsoap.helloworld.types" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns2="de.mpg.ipp.hgw.boz.gsoap.helloworld.types" xmlns:ns1="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified" attributeFormDefault="unqualified">
+  <import namespace="de.mpg.ipp.hgw.boz.gsoap.helloworld"/>
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/" schemaLocation="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <complexType name="Name">
+   <sequence>
+     <element name="firstName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="lastName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+   </sequence>
+  </complexType>
+  <complexType name="Person">
+   <sequence>
+     <element name="age" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="height" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="weight" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="name" type="ns2:Name" minOccurs="0" maxOccurs="1" nillable="true"/>
+   </sequence>
+  </complexType>
+ </schema>
+
+ <schema targetNamespace="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns2="de.mpg.ipp.hgw.boz.gsoap.helloworld.types" xmlns:ns1="de.mpg.ipp.hgw.boz.gsoap.helloworld" xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified" attributeFormDefault="unqualified">
+  <import namespace="de.mpg.ipp.hgw.boz.gsoap.helloworld.types"/>
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/" schemaLocation="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <!-- operation request element -->
+  <element name="testMe">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="giveMessage">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="giveMessageResponse">
+   <complexType>
+    <sequence>
+     <element name="out" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="echoString">
+   <complexType>
+    <sequence>
+     <element name="in" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="echoStringResponse">
+   <complexType>
+    <sequence>
+     <element name="out" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="faultyThing">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="faultyThingResponse">
+   <complexType>
+    <sequence>
+     <element name="out" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="sayHello">
+   <complexType>
+    <sequence>
+     <element name="person" type="ns2:Person" minOccurs="0" maxOccurs="1" nillable="true"/>
+     <element name="times" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="sayHelloResponse">
+   <complexType>
+    <sequence>
+     <element name="result" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+ </schema>
+
+</types>
+
+<message name="testMe">
+ <part name="parameters" element="ns1:testMe"/>
+</message>
+
+<message name="giveMessageRequest">
+ <part name="parameters" element="ns1:giveMessage"/>
+</message>
+
+<message name="giveMessageResponse">
+ <part name="parameters" element="ns1:giveMessageResponse"/>
+</message>
+
+<message name="echoStringRequest">
+ <part name="parameters" element="ns1:echoString"/>
+</message>
+
+<message name="echoStringResponse">
+ <part name="parameters" element="ns1:echoStringResponse"/>
+</message>
+
+<message name="faultyThingRequest">
+ <part name="parameters" element="ns1:faultyThing"/>
+</message>
+
+<message name="faultyThingResponse">
+ <part name="parameters" element="ns1:faultyThingResponse"/>
+</message>
+
+<message name="sayHello">
+ <part name="parameters" element="ns1:sayHello"/>
+</message>
+
+<message name="sayHelloResponse">
+ <part name="parameters" element="ns1:sayHelloResponse"/>
+</message>
+
+<portType name="HelloWorldServicePortType">
+ <operation name="testMe">
+  <documentation>Service definition of function ns1__testMe</documentation>
+  <input message="tns:testMe"/>
+ </operation>
+ <operation name="giveMessage">
+  <documentation>Service definition of function ns1__giveMessage</documentation>
+  <input message="tns:giveMessageRequest"/>
+  <output message="tns:giveMessageResponse"/>
+ </operation>
+ <operation name="echoString">
+  <documentation>Service definition of function ns1__echoString</documentation>
+  <input message="tns:echoStringRequest"/>
+  <output message="tns:echoStringResponse"/>
+ </operation>
+ <operation name="faultyThing">
+  <documentation>Service definition of function ns1__faultyThing</documentation>
+  <input message="tns:faultyThingRequest"/>
+  <output message="tns:faultyThingResponse"/>
+ </operation>
+ <operation name="sayHello">
+  <documentation>Service definition of function ns1__sayHello</documentation>
+  <input message="tns:sayHello"/>
+  <output message="tns:sayHelloResponse"/>
+ </operation>
+</portType>
+
+<binding name="HelloWorldService" type="tns:HelloWorldServicePortType">
+ <SOAP:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+ <operation name="testMe">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+ </operation>
+ <operation name="giveMessage">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="echoString">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="faultyThing">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="sayHello">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+</binding>
+
+<service name="HelloWorldService">
+ <documentation>gSOAP 2.8.0 generated service definition</documentation>
+ <port name="HelloWorldService" binding="tns:HelloWorldService">
+  <SOAP:address location="http://lxpowerboz:88/services/cpp/HelloWorldService"/>
+ </port>
+</service>
+
+</definitions>

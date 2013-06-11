@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<schema targetNamespace="vostok" 
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    xmlns:x = "zapad"
+    xmlns:y = "sever"
+    xmlns:tns = "vostok"
+    elementFormDefault="unqualified" attributeFormDefault="unqualified">
+     <import schemaLocation="schema2.xml"/>
+     <include schemaLocation="schema3.xml"/>
+  <simpleType name="Profession">
+      <restriction base="xsd:string">
+          <enumeration value="cosmonaut"/>
+          <enumeration value="scientist"/>
+      </restriction>
+  </simpleType>
+  <simpleType name="Counter">
+      <restriction base="int">
+          <minInclusive value="0"/>
+          <maxInclusive value="120"/>
+      </restriction>
+  </simpleType>
+  <complexType name="Name">
+      <documentation> bla-bla-bla</documentation>
+   <sequence>
+     <element name="firstName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="lastName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+   </sequence>
+  </complexType>
+  <element name = "Comment" type="xsd:string"/>
+  <element name = "Person">
+      <complexType>
+       <sequence>
+         <element name="age" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+         <element name="height" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+         <element name="weight" type="xsd:float" minOccurs="1" maxOccurs="1"/>
+         <element name="name" type="tns:Name" minOccurs="0" maxOccurs="1" nillable="true"/>
+         <element name="place" type="x:Address" minOccurs ="1" maxOccurs="10"/>
+         <element name="car" type="y:Car" minOccurs ="0" maxOccurs="5"/>
+         <element ref="tns:Comment"/>
+       </sequence>
+      </complexType>
+  </element>
+  <element name="Robot" type="tns:Person"/>
+  <element name="Shish" />
+</schema>
