@@ -23,13 +23,20 @@ WSDL parser
    :show-inheritance:
    :members:
 
+.. automodule:: osa.xmlschema
+   :show-inheritance:
+   :members:
 
 .. _methods:
 
 Methods wrapper
 ^^^^^^^^^^^^^^^
 
-.. automodule:: osa.methods
+.. automodule:: osa.message
+   :show-inheritance:
+   :members:
+
+.. automodule:: osa.method
    :show-inheritance:
    :members:
 

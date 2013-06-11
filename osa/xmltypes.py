@@ -138,9 +138,11 @@ class XMLType(object):
                 If constraints are not satisfied.
         """
         if n<min_occurs:
-            raise ValueError("Number of values is less than min_occurs")
+            raise ValueError("Number of values n=%d is less than min_occurs=%d"\
+                                        %(n, min_occurs))
         if n > max_occurs:
-            raise ValueError("Number of values is more than max_occurs")
+            raise ValueError("Number of values n=%d is more than max_occurs n=%s"\
+                                        %(n, str(max_occurs)))
 
     def to_xml(self, parent, name):
         """
@@ -191,22 +193,24 @@ class XMLType(object):
             #conversion
             full_name = ns + child_name #name with namespace
             for single in val:
-                try:
-                    single.to_xml(element, full_name)
-                    if child["type"] is XMLAny:
-                        #append type information
-                        element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
-                                "{%s}%s" %(single._namespace,
-                                           single.__class__.__name__) )
-                except Exception:
+                if not(hasattr(single, "to_xml")):
                     single = child['type'](single)
-                    single.to_xml(element, full_name)
-                #if not(isinstance(single, child['type'])):
-                    ##useful for primitive types:  python int, e.g.,
-                    ##can be passed directly. If str is used instead
-                    ##an exception is fired up.
+                single.to_xml(element, full_name)
+                if child["type"] is XMLAny:
+                    #append type information
+                    element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
+                            "{%s}%s" %(single._namespace,
+                                       single.__class__.__name__) )
+                #try:
+                    #single.to_xml(element, full_name)
+                    #if child["type"] is XMLAny:
+                        ##append type information
+                        #element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
+                                #"{%s}%s" %(single._namespace,
+                                           #single.__class__.__name__) )
+                #except Exception:
                     #single = child['type'](single)
-                #single.to_xml(element, full_name)
+                    #single.to_xml(element, full_name)
 
     def from_xml(self, element):
         """
@@ -229,7 +233,9 @@ class XMLType(object):
             all_children_names.append(child["name"])
 
         for subel in element:
-            name = xmlnamespace.get_local_name(subel.tag)
+            #name = xmlnamespace.get_local_name(subel.tag)
+            name = subel.tag
+            name = name[name.find("}")+1:]
             ind = all_children_names.index(name)
 
             #used for conversion. for primitive types we receive back built-ins

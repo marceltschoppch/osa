@@ -198,6 +198,38 @@ class XMLSchemaParser(object):
             XMLSchemaParser.create_alias(name, base_type, xtypes, types)
 
     @staticmethod
+    def get_type_by_name(name, xtypes, types):
+        """
+            Return requested class from primmap or as created from xml.
+
+            Parameters
+            ----------
+            name : str
+                Type name.
+            xtypes : dict
+                List of xml elements to look in.
+            types : dict
+                List of already created classes to look in.
+
+            Returns
+            -------
+            out : class
+        """
+        if name is None:
+            return
+        elif xmltypes.primmap.has_key(name):
+            cl = xmltypes.primmap[name]
+        elif types.has_key(name):
+            cl = types[name]
+        elif not(xtypes.has_key(name)):
+            raise ValueError(" Class %s not found in anywhere" %(name))
+        else:
+            XMLSchemaParser.create_type(name,
+                            xtypes[name], xtypes, types)
+            cl = types[name]
+        return cl
+
+    @staticmethod
     def get_doc(x):
         """
             Extract documentation from element.
@@ -234,19 +266,9 @@ class XMLSchemaParser(object):
             types : dictionary of classes
                 The new aliases is appended here.
         """
-        alias = None
-        if alias_type is None:
+        alias = XMLSchemaParser.get_type_by_name(alias_type, xtypes, types)
+        if alias is None:
             return
-        elif xmltypes.primmap.has_key(alias_type):
-            alias = xmltypes.primmap[alias_type]
-        elif types.has_key(alias_type):
-            alias = types[alias_type]
-        elif not(xtypes.has_key(alias_type)):
-            raise ValueError(" Alias class %s not found in schema" %(alias_type))
-        else:
-            XMLSchemaParser.create_type(alias_type,
-                            xtypes[alias_type], xtypes, types)
-            alias = types[alias_type]
         cls_name = xmlnamespace.get_local_name(name)
         cls_ns = xmlnamespace.get_ns(name)
         #create new type since the namespace may be different
@@ -329,16 +351,7 @@ class XMLSchemaParser(object):
         if exts is not None:
             for ext in exts:
                 parent_name = ext.get("base", None) 
-                if parent_name is None:
-                    continue
-                elif types.has_key(parent_name):
-                    parent = types[parent_name]
-                elif not(xtypes.has_key(parent_name)):
-                    raise ValueError(" Parent class not found in schema for:\n %s" %(etree.tostring(element)))
-                else:
-                    XMLSchemaParser.create_type(parent_name,
-                                    xtypes[parent_name], xtypes, types)
-                    parent = types[parent_name]
+                parent = XMLSchemaParser.get_type_by_name(parent_name, xtypes, types)
                 parents.append(parent)
 
         #find sequence/choice/all
@@ -375,26 +388,13 @@ class XMLSchemaParser(object):
                         type_name = child_name
                     else:
                         continue
-
-                if xmltypes.primmap.has_key(type_name):
-                    type = xmltypes.primmap[type_name]
-                elif types.has_key(type_name):
-                    type = types[type_name]
-                elif not(xtypes.has_key(type_name)):
-                    raise ValueError("Type %s not found for:\n %s" %(type_name,etree.tostring(element)))
-                else:
-                    XMLSchemaParser.create_type(type_name,
-                                    xtypes[type_name], xtypes, types)
-                    type = types[type_name]
+                type = XMLSchemaParser.get_type_by_name(type_name, xtypes, types)
                 minOccurs = int(s.get('minOccurs', 1))
                 maxOccurs = s.get('maxOccurs', 1)
                 if maxOccurs != 'unbounded':
                     maxOccurs = int(maxOccurs)
-                children.append({ "name":child_name,
-                                 'type' : type,
-                                 'min' : minOccurs,
-                                 'max' : maxOccurs})
-
+                children.append({ "name":child_name, 'type' : type,
+                                 'min' : minOccurs, 'max' : maxOccurs})
         #get doc
         doc = XMLSchemaParser.get_doc(element)
 

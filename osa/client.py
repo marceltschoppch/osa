@@ -7,7 +7,6 @@
 """
 
 import xmlnamespace
-import xmltypes
 import wsdl
 
 def str_for_containers(self):

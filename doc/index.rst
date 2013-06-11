@@ -17,7 +17,7 @@ elements). Therefore I created this library by combining ideas found in
 At the moment the library is limited to wrapped document/literal `SOAP 1.1`_
 convention. To include other call conventions one has to extend the
 :py:func:`to_xml` and :py:func:`from_xml` methods of the :py:class:`Message`
-:ref:`class <methods>`. The structure of the library is briefly explained
+:ref:`class <message>`. The structure of the library is briefly explained
 :ref:`here <Structure>`. The *XML* processing is performed with the
 help of :py:mod:`cElementTree` module.
 

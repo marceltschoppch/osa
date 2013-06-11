@@ -7,7 +7,6 @@
 """
 import xmlnamespace
 import xmlparser
-import message
 from urllib2 import urlopen, Request, HTTPError
 import xml.etree.cElementTree as etree
 
