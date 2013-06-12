@@ -9,6 +9,7 @@ import xmlnamespace
 from decimal import Decimal
 from datetime import date, datetime, time
 import xml.etree.cElementTree as etree
+import base64
 
 
 def get_local_type(xmltype):
@@ -384,6 +385,17 @@ class XMLString(XMLType, str):
         else:
             return None
 
+class XMLBase64Binary(XMLType, str):
+    def to_xml(self, parent, name):
+        element = etree.SubElement(parent, name)
+        element.text = base64.b64encode(self)
+
+    def from_xml(self, element):
+        if element.text:
+            return base64.b64decode(element.text)
+        else:
+            return None
+
 class XMLInteger(XMLType, int):
     def to_xml(self, parent, name):
         element = etree.SubElement(parent, name)
@@ -542,8 +554,8 @@ primmap = {  'anyType'                                 : XMLAny,
              '{%s}double' %xmlnamespace.NS_XSD         : XMLDouble,
              'string'                                  : XMLString,
              '{%s}string' %xmlnamespace.NS_XSD         : XMLString,
-             'base64Binary'                            : XMLString,
-             '{%s}base64Binary' %xmlnamespace.NS_XSD   : XMLString,
+             'base64Binary'                            : XMLBase64Binary,
+             '{%s}base64Binary' %xmlnamespace.NS_XSD   : XMLBase64Binary,
              'anyURI'                                  : XMLString,
              '{%s}anyURI' %xmlnamespace.NS_XSD         : XMLString,
              'language'                                : XMLString,
