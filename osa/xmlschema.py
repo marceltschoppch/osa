@@ -21,6 +21,8 @@ class XMLSchemaParser(object):
             self.schema - the root node of the schema
             self.tns - target namespace
             self.imported - a list of parsers for imported schemas
+            self.qualified - value of elementFormDefault, used
+                             for handling namespaces
 
             Parameters
             ----------
@@ -35,6 +37,9 @@ class XMLSchemaParser(object):
         #set schema parameters
         self.schema = root
         self.tns = self.schema.get("targetNamespace", "")
+        self.qualified = self.schema.get("elementFormDefault", 0)
+        if self.qualified == "qualified":
+            self.qualified = 1
 
         #find and initialize imported ones
         self.imported = [] 
@@ -103,12 +108,14 @@ class XMLSchemaParser(object):
             name = el.get("name", None)
             if name is not None: #consider an exception
                 name = "{%s}%s" %(self.tns, name)
+                el.set("qualified", self.qualified)
                 types[name] = el
 
         for el in elements:
             name = el.get("name", None)
             if name is not None:
                 name = "{%s}%s" %(self.tns, name)
+                el.set("qualified", self.qualified)
                 if not(types.has_key(name)):
                     types[name] = el
 
@@ -171,6 +178,7 @@ class XMLSchemaParser(object):
         #simpleType.restriction - e.g. string enumeration
         if element.tag ==  "{%s}element" %xmlnamespace.NS_XSD:
             if len(element)>0:
+                element[0].set("qualified", element.get("qualified", 0))
                 element = element[0]
             else:
                 type = element.get("type", None)
@@ -345,6 +353,7 @@ class XMLSchemaParser(object):
             types : dictionary class name -> Python class
                 The result is appended here.
         """
+        qualified = element.get("qualified", 0)
         #decide if we have a parent and first create that
         parents = []
         exts = element.findall("./{%s}complexContent/{%s}extension" %(xmlnamespace.NS_XSD, xmlnamespace.NS_XSD))
@@ -365,14 +374,18 @@ class XMLSchemaParser(object):
                 break
 
         #collect children
+        cls_ns = xmlnamespace.get_ns(name)
         children = []
         if seq is not None:
             for s in seq:
                 #iterate over sequence, do not consider in place defs
                 ref = s.get("ref", None) #reference to another element
                 if ref is not None:
+                    # can there be a reference to a local element?
+                    #I assume not => always qualified
                     type_name = ref
-                    child_name = xmlnamespace.get_local_name(ref)
+                    #child_name = xmlnamespace.get_local_name(ref)
+                    child_name = ref #name is qualified by the target, is it correct?
                 else:
                     type_name = s.get('type', None)
                     child_name = s.get('name', 'unknown')
@@ -393,8 +406,14 @@ class XMLSchemaParser(object):
                 maxOccurs = s.get('maxOccurs', 1)
                 if maxOccurs != 'unbounded':
                     maxOccurs = int(maxOccurs)
+                #child name is qualified as required, i.e. it is a full name
+                full_child_name = child_name
+                child_name = xmlnamespace.get_local_name(child_name) #class member names!
+                if qualified and full_child_name.find("}") == -1:
+                    full_child_name = "{%s}%s" %(cls_ns, full_child_name)
                 children.append({ "name":child_name, 'type' : type,
-                                 'min' : minOccurs, 'max' : maxOccurs})
+                                 'min' : minOccurs, 'max' : maxOccurs,
+                                 "fullname": full_child_name})
         #get doc
         doc = XMLSchemaParser.get_doc(element)
 
@@ -402,7 +421,6 @@ class XMLSchemaParser(object):
         #I choose to give short names to classes, i.e. without
         # a namespace, even though Python can manage full names as well
         cls_name = xmlnamespace.get_local_name(name)
-        cls_ns = xmlnamespace.get_ns(name)
         cls = xmltypes.ComplexTypeMeta(cls_name, parents,
                                   {"_children":children, "__doc__":doc,
                                    "_namespace":cls_ns})

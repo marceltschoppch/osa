@@ -20,48 +20,48 @@ ns_test = 'test_namespace'
 
 Address = ComplexTypeMeta('Address', (), {
                 "_children":[
-                        {'name':"street", "type":XMLString, "min":1, "max": 1},
-                        {'name':"city", "type":XMLString, "min":1, "max": 1},
-                        {'name':"zip", "type":XMLInteger, "min":1, "max": 1},
-                        {'name':"since", "type":XMLDateTime, "min":0, "max": 1},
-                        {'name':"lattitude", "type":XMLDouble, "min":1, "max": 1},
-                        {'name':"longitude", "type":XMLDouble, "min":1, "max": 1},
+                    {'name':"street", "type":XMLString, "min":1, "max": 1, "fullname":"street"},
+                    {'name':"city", "type":XMLString, "min":1, "max": 1, "fullname":"city"},
+                    {'name':"zip", "type":XMLInteger, "min":1, "max": 1,"fullname":"zip"},
+                    {'name':"since", "type":XMLDateTime, "min":0, "max": 1, "fullname":"since"},
+                    {'name':"lattitude", "type":XMLDouble, "min":1, "max": 1, "fullname":"lattitude"},
+                    {'name':"longitude", "type":XMLDouble, "min":1, "max": 1, "fullname":"longitude"},
                         ], "__doc__": "an address info"})
 Person = ComplexTypeMeta('Person', (), {
                 "_children":[
-                        {'name':"name", "type":XMLString, "min":0, "max": 1},
-                        {'name':"birthdate", "type":XMLDateTime, "min":0, "max": 1},
-                        {'name':"age", "type":XMLInteger, "min":0, "max": 1},
-                        {'name':"addresses", "type":Address, "min":0, "max": 'unbounded'},
-                        {'name':"titles", "type":XMLString, "min":0, "max": 'unbounded'},
+                    {'name':"name", "type":XMLString, "min":0, "max": 1,"fullname":"name"},
+                    {'name':"birthdate", "type":XMLDateTime, "min":0, "max": 1, "fullname":"birthdate"},
+                    {'name':"age", "type":XMLInteger, "min":0, "max": 1,"fullname":"age"},
+                    {'name':"addresses", "type":Address, "min":0, "max": 'unbounded',"fullname":"addresses"},
+                    {'name':"titles", "type":XMLString, "min":0, "max": 'unbounded',"fullname":"titles"},
                         ], "__doc__": "a person info"})
 
 Employee = ComplexTypeMeta('Employee', (Person,), {
                 "_children":[
-                        {'name':"id", "type":XMLInteger, "min":1, "max": 1},
-                        {'name':"salary", "type":XMLDouble, "min":1, "max": 1},
+                    {'name':"id", "type":XMLInteger, "min":1, "max": 1,"fullname":"id"},
+                    {'name':"salary", "type":XMLDouble, "min":1, "max": 1,"fullname":"salary"},
                         ], "__doc__": "an employee info"})
 
 Level2 = ComplexTypeMeta('Level2', (), {
                 "_children":[
-                        {'name':"arg1", "type":XMLString, "min":1, "max": 1},
-                        {'name':"arg2", "type":XMLDouble, "min":1, "max": 1},
+                    {'name':"arg1", "type":XMLString, "min":1, "max": 1,"fullname":"arg1"},
+                    {'name':"arg2", "type":XMLDouble, "min":1, "max": 1,"fullname":"arg2"},
                         ], "__doc__": "don't know"})
 
 Level3 = ComplexTypeMeta('Level3', (), {
                 "_children":[
-                        {'name':"arg1", "type":XMLInteger, "min":1, "max": 1},
+                    {'name':"arg1", "type":XMLInteger, "min":1, "max": 1,"fullname":"arg1"},
                         ], "__doc__": "don't know"})
 Level4 = ComplexTypeMeta('Level4', (), {
                 "_children":[
-                        {'name':"arg1", "type":XMLString, "min":1, "max": 1},
+                    {'name':"arg1", "type":XMLString, "min":1, "max": 1,"fullname":"arg1"},
                         ], "__doc__": "don't know"})
 
 Level1 = ComplexTypeMeta('Level1', (), {
                 "_children":[
-                        {'name':"level2", "type":Level2, "min":1, "max": 1},
-                        {'name':"level3", "type":Level3, "min":0, "max": 'unbouneded'},
-                        {'name':"level4", "type":Level4, "min":0, "max": 'unbouneded'},
+                    {'name':"level2", "type":Level2, "min":1, "max": 1,"fullname":"level2"},
+                    {'name':"level3", "type":Level3, "min":0, "max": 'unbouneded', "fullname":"level3"},
+                    {'name':"level4", "type":Level4, "min":0, "max": 'unbouneded',"fullname":"level4"},
                         ], "__doc__": "don't know"})
 
 class TestClassSerializer(unittest.TestCase):

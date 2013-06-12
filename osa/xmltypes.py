@@ -161,16 +161,12 @@ class XMLType(object):
         #this level element
         element = etree.SubElement(parent, name)
 
-        #namespace for future naming
-        if self._namespace:
-            ns = "{" + self._namespace + "}"
-        else:
-            ns = ''
         #add all children to the current level
         #note that children include also base classes, as they are propagated by
         #the metaclass below
         for child in self._children:
             child_name = child["name"]
+            full_child_name = child["fullname"]
             #get the value of the argument
             val = getattr(self, child_name, None)
 
@@ -191,11 +187,10 @@ class XMLType(object):
                 continue #only nillables can get so far
 
             #conversion
-            full_name = ns + child_name #name with namespace
             for single in val:
                 if not(hasattr(single, "to_xml")):
                     single = child['type'](single)
-                single.to_xml(element, full_name)
+                single.to_xml(element, full_child_name)
                 if child["type"] is XMLAny:
                     #append type information
                     element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
@@ -313,7 +308,8 @@ class ComplexTypeMeta(type):
             _children attribute must be present in attributes. It describes
             the arguments to be present in the new type. The he
             _children argument must be a list of the form:
-            [{'name':'arg1', 'min':1, 'max':1, 'type':ClassType}, ...]
+            [{'name':'arg1', 'min':1, 'max':1, 'type':ClassType, "fullname":"name with ns"}, ...]
+            Here fullname is used for serialization and must be qualified properly.
 
             Parameters
             ----------

@@ -152,8 +152,10 @@ class Message(object):
                 setattr(p, name, val)
 
         #set default ns to save space
-        etree.register_namespace("", xmlnamespace.get_ns(self.name))
+        #this does not work with xml qualified/unqualified, need a hack
+        #etree.register_namespace("", xmlnamespace.get_ns(self.name))
         #the real conversion is done by ComplexType
+        #messages always refer to a top level element => qualified
         p.to_xml(kw["_body"], "{%s}%s" %(p._namespace, p.__class__.__name__))
 
     def from_xml(self, body, header = None):
