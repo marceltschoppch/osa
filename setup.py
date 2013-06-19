@@ -3,28 +3,27 @@ import sys
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
+Environment :: Console
+Environment :: Web Environment
 Intended Audience :: Developers
-License :: LGPL
+Intended Audience :: End Users/Desktop
+License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
 Natural Language :: English
+Operating System :: OS Independent
 Programming Language :: Python
-Programming Language :: Python :: 2.4
-Programming Language :: Python :: 2.5
-Programming Language :: Python :: 2.6
-Programming Language :: Python :: 2.7
+Topic :: Internet
+Topic :: Internet :: WWW/HTTP
+Topic :: Software Development :: Libraries
 Topic :: Software Development :: Object Brokering""".split("\n")
-
-if sys.version_info >= (2, 6):
-    dateutil_version = '>=1.4,<2.0'
-else:
-    dateutil_version = '>=1.4,<1.5'
 
 setup(
     name='osa',
-    version='0.1',
-    author_email='boz@ipp.mpg.de',
-    description='osa is a fast/slim SOAP client.',
-    install_requires=['python-dateutil%s' % dateutil_version],
-    tests_require=['Sphinx>=1.0'],
-    packages=find_packages(),
+    version='0.1.6',
+    description='Python fast/slim/convenient SOAP/WSDL client.',
+    author="Sergey A. Bozhenkov",
+    author_email='ba-serge@yandex.ru',
+    url="https://bitbucket.org/sboz/osa",
+    packages=["osa",],
+    license="GPLv3",
     classifiers=CLASSIFIERS,
     )

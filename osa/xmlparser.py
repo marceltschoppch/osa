@@ -74,10 +74,9 @@ def parse_qualified_from_url(url, attr = None):
     """
     #open page - get a file like object and
     # parse it into xml
-    if url[:7] == "http://":
-        page_handler = urllib2.urlopen(url)
-    else:
-        page_handler = open(url, "r")
+    if url[0] == "/" or url.find(":") == -1: #file without file: in front
+        url = "file:"+url
+    page_handler = urllib2.urlopen(url)
     root = parse_qualified(page_handler, attr=attr)
     page_handler.close()
     del page_handler
