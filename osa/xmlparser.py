@@ -66,7 +66,7 @@ def parse_qualified(f, attr = None):
                                 element.attrib[a] = "{%s}%s" %(ns[1], vlist[1])
     return root
 
-def parse_qualified_from_url(url, attr = None):
+def parse_qualified_from_url(url, attr = None, wsdl_url=None):
     """
         The same as `parse_qualified`, but xml is given by its url.
 
@@ -76,7 +76,22 @@ def parse_qualified_from_url(url, attr = None):
     # parse it into xml
     if url[0] == "/" or url.find(":") == -1: #file without file: in front
         url = "file:"+url
-    page_handler = urllib2.urlopen(url)
+    try:
+        if url[:7] == "http://":
+            page_handler = urllib2.urlopen(url)
+        else:
+            page_handler = open(url, "r")
+    except IOError:
+        # and if file is not found remote or local, try to found it remote 
+        # again, but with wsdl url.
+        orig_url = url
+        url = wsdl_url.rsplit('/', 1)[0] + '/' + url
+        try:
+            page_handler = urllib2.urlopen(url)
+        except urllib2.HTTPError:
+            raise ValueError("Can not found '%s'. Locations tried was '%s' "
+                             "and '%s'." % (orig_url, url))
+
     root = parse_qualified(page_handler, attr=attr)
     page_handler.close()
     del page_handler

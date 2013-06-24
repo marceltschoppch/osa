@@ -53,7 +53,7 @@ class WSDLParser(object):
         schemas = types_section.findall('./{%s}schema' %xmlnamespace.NS_XSD)
         xtypes = {}
         for schema in schemas:
-            parser = xmlschema.XMLSchemaParser(schema)
+            parser = xmlschema.XMLSchemaParser(schema, wsdl_url=self.wsdl_url)
             xtypes.update(parser.get_list_of_defined_types())
         types =  xmlschema.XMLSchemaParser.convert_xmltypes_to_python(xtypes)
         xmltypes.XMLAny._types.update(types)
