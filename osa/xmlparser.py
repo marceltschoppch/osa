@@ -74,23 +74,22 @@ def parse_qualified_from_url(url, attr = None, wsdl_url=None):
     """
     #open page - get a file like object and
     # parse it into xml
-    if url[0] == "/" or url.find(":") == -1: #file without file: in front
-        url = "file:"+url
     try:
-        if url[:7] == "http://":
-            page_handler = urllib2.urlopen(url)
-        else:
-            page_handler = open(url, "r")
-    except IOError:
-        # and if file is not found remote or local, try to found it remote 
-        # again, but with wsdl url.
-        orig_url = url
-        url = wsdl_url.rsplit('/', 1)[0] + '/' + url
+        # opens http://, https://, file://
+        page_handler = urllib2.urlopen(url)
+    except (urllib2.HTTPError, ValueError):
         try:
-            page_handler = urllib2.urlopen(url)
-        except urllib2.HTTPError:
-            raise ValueError("Can not found '%s'. Locations tried was '%s' "
-                             "and '%s'." % (orig_url, url))
+            # url is something /path/to/file, use open directly
+            page_handler = open(url, 'r')
+        except IOError:
+            try:
+                # local file isn't found, try to get remote file with
+                # wsdl_url 'directory' + filename
+                orig_url = url
+                url = wsdl_url.rsplit('/', 1)[0] + '/' + url
+                page_handler = urllib2.urlopen(url)
+            except (urllib2.HTTPError, ValueError):
+                raise ValueError("Can not found '%s'." % orig_url)
 
     root = parse_qualified(page_handler, attr=attr)
     page_handler.close()
