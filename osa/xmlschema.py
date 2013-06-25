@@ -14,7 +14,7 @@ class XMLSchemaParser(object):
     """
         Parser to get types from an XML Schema.
     """
-    def __init__(self, root, wsdl_url):
+    def __init__(self, root, wsdl_url=None):
         """
             Initialize parser.
 
@@ -26,10 +26,15 @@ class XMLSchemaParser(object):
 
             Parameters
             ----------
-            wsdl_url : xml schema, i.e. <schema ...> ... </schema>
+            root : xml schema, i.e. <schema ...> ... </schema>
                 The schema to parse
+            wsdl_url : string
+                Url the wsdl comes from, can be used to expand schema
+                references.
         """
-	self.wsdl_url = wsdl_url
+        if wsdl_url is None:
+            wsdl_url = ""
+        self.wsdl_url = wsdl_url
         #check we have a schema
         if root.tag != "{%s}schema" %xmlnamespace.NS_XSD:
             raise ValueError("Supplied root node '%s'"\
