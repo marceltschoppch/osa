@@ -6,7 +6,11 @@
     Help functions for dealing with xml.
 """
 import xml.etree.cElementTree as etree
-import urllib2
+import sys
+if sys.version_info.major < 3:
+    from urllib2 import urlopen, HTTPError
+else:
+    from urllib.request import urlopen, HTTPError
 
 default_attr = ["type", "base", "element", "message", "binding", "ref"]
 
@@ -54,7 +58,7 @@ def parse_qualified(f, attr = None):
             if root is None:
                 root = element
             #check that this element has an attribute of interest
-            for a in element.attrib.keys():
+            for a in element.attrib:
                 if a in attr:
                     #check the attribute value is qualified
                     vlist =  element.attrib[a].split(":")
@@ -76,8 +80,8 @@ def parse_qualified_from_url(url, attr = None, wsdl_url=None):
     # parse it into xml
     try:
         # opens http://, https://, file://
-        page_handler = urllib2.urlopen(url)
-    except (urllib2.HTTPError, ValueError):
+        page_handler = urlopen(url)
+    except (HTTPError, ValueError):
         try:
             # url is something /path/to/file, use open directly
             page_handler = open(url, 'r')
@@ -87,8 +91,8 @@ def parse_qualified_from_url(url, attr = None, wsdl_url=None):
                 # wsdl_url 'directory' + filename
                 orig_url = url
                 url = wsdl_url.rsplit('/', 1)[0] + '/' + url
-                page_handler = urllib2.urlopen(url)
-            except (urllib2.HTTPError, ValueError):
+                page_handler = urlopen(url)
+            except (HTTPError, ValueError):
                 raise ValueError("Can not found '%s'." % orig_url)
 
     root = parse_qualified(page_handler, attr=attr)

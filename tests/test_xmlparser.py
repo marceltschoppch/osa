@@ -16,8 +16,8 @@ from osa.xmlparser import *
 class TestXMLParser(unittest.TestCase):
     def test_ns_attr_parsing(self):
         root = parse_qualified_from_url("test.xml", attr=["a"])
-        self.assertEquals(root.get("bok"), "ns:round")
-        self.assertEquals(root[0].get("a"), "{39kingdom}angry")
+        self.assertEqual(root.get("bok"), "ns:round")
+        self.assertEqual(root[0].get("a"), "{39kingdom}angry")
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,11 +5,14 @@
 """
     Python classes corresponding to XML schema.
 """
-import xmlnamespace
+from . import xmlnamespace
 from decimal import Decimal
 from datetime import date, datetime, time
 import xml.etree.cElementTree as etree
 import base64
+import sys
+if sys.version_info.major > 2:
+    unicode = str
 
 
 def get_local_type(xmltype):
@@ -60,8 +63,7 @@ def toinit(self, deep = False):
             val = val_type(deep=deep)
         else:
             val = val_type()
-        if child['max'] > 1:
-            #'unbounded' > 1
+        if child['max'].__class__.__name__ != "int" or child['max']>1:
             val = [val,]
         setattr(self, child['name'], val)
 
@@ -73,8 +75,7 @@ def tostr(self):
     for child in self._children:
         child_name = child['name']
         array = ''
-        if child['max']>1:
-             # 'unbounded'>1
+        if child['max'].__class__.__name__ != "int" or child['max']>1:
              array = '[]'
         child_value = getattr(self, child_name, None)
         many = False
@@ -119,32 +120,6 @@ class XMLType(object):
     """
     _namespace = ""
 
-
-    def check_constraints(self, n, min_occurs, max_occurs):
-        """
-            Performs constraints checking.
-
-            Parameters
-            ----------
-            n : int
-                Actual number of occurrences.
-            min_occurs : int
-                Minimal allowed number of occurrences.
-            max_occurs : int or 'unbounded'
-                Maximal allowed number of occurrences.
-
-           Raises
-           ------
-            ValueError
-                If constraints are not satisfied.
-        """
-        if n<min_occurs:
-            raise ValueError("Number of values n=%d is less than min_occurs=%d"\
-                                        %(n, min_occurs))
-        if n > max_occurs:
-            raise ValueError("Number of values n=%d is more than max_occurs n=%s"\
-                                        %(n, str(max_occurs)))
-
     def to_xml(self, parent, name):
         """
             Function to convert to xml from python representation.
@@ -173,7 +148,7 @@ class XMLType(object):
 
             #do constraints checking
             n = 0 #number of values for constraints checking
-            if hasattr(val, "__iter__"):#isinstance(val, (list, tuple)):
+            if hasattr(val, "__iter__") and val.__class__.__name__ != "str":
                 n = len(val)
             elif val is not None:
                 n = 1
@@ -181,7 +156,7 @@ class XMLType(object):
 
             if n < child["min"]:
                 raise ValueError("Number of values for %s is less than min_occurs: %s" %(name, str(val)))
-            if n > child["max"]:
+            if child["max"].__class__.__name__ == "int" and n > child["max"]:
                 raise ValueError("Number of values for %s is more than max_occurs: %s" %(name, str(val)))
 
             if n == 0:
@@ -243,8 +218,8 @@ class XMLType(object):
                 if self._children[ind]['min'] != 0:
                     raise ValueError("Non-nillable %s element is nil." %name)
             else:
-                #unbounded is larger than 1
-                if self._children[ind]['max'] > 1:
+                if self._children[ind]['max'].__class__.__name__ != "int" or\
+                   self._children[ind]['max']>1:
                     current_value = getattr(self, name, None)
                     if current_value is None:
                         current_value = []
@@ -274,7 +249,7 @@ class XMLType(object):
         root = etree.Element("root")
         self.to_xml(root, fullname)
         f = open(fname, "w")
-        f.write(etree.tostring(root[0]))
+        f.write(etree.tostring(root[0]).decode())
         f.close()
 
     @classmethod
@@ -323,7 +298,7 @@ class ComplexTypeMeta(type):
                 Attributes of the new type.
         """
         #list of children, even if empty, must be always present
-        if not(attributes.has_key("_children")):
+        if not "_children" in attributes:
             attributes["_children"] = []
 
         #create dictionary for initializing class arguments
@@ -364,7 +339,7 @@ class ComplexTypeMeta(type):
             bases = tuple(newBases)
 
         #propagate other non-reserved atributes
-        for k in attributes.keys():
+        for k in attributes:
             if k not in ("_children", "__init__", "__doc__",
                     "__ne__", "__eq__", "__str__", "__repr__"):
                 clsDict[k] = attributes[k]
@@ -381,7 +356,7 @@ class XMLString(XMLType, str):
 
     def from_xml(self, element):
         if element.text:
-            return element.text.encode('utf-8')
+            return element.text
         else:
             return None
 
@@ -522,7 +497,7 @@ class XMLStringEnumeration(XMLType):
     def from_xml(self, element):
         val = ""
         if element.text:
-            val = element.text.encode('utf-8')
+            val = element.text
         if val not in self._allowedValues:
             raise ValueError("Not allowed value for this enumeration: value = %s" %(val))
         return val

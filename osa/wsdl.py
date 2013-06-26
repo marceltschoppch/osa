@@ -5,12 +5,12 @@
 """
     Conversion of WSDL documents into Python.
 """
-import xmlnamespace
-import xmlparser
-import xmlschema
-import xmltypes
-import message
-import method
+from . import xmlnamespace
+from . import xmlparser
+from . import xmlschema
+from . import xmltypes
+from . import message
+from . import method
 import xml.etree.cElementTree as etree
 
 class WSDLParser(object):
@@ -86,15 +86,15 @@ class WSDLParser(object):
                     part_type = y.get("type", None)
                 if part_type is None:
                     raise ValueError("Could not find part type in:\n %s"\
-                                     %(etree.tostring(x)))
+                                     %(etree.tostring(x).decode()))
                 cls = None
-                if types.has_key(part_type):
+                if part_type in types:
                     cls = types[part_type]
-                elif xmltypes.primmap.has_key(part_type):
+                elif part_type in xmltypes.primmap:
                     cls = xmltypes.primmap[part_type]
                 else:
                     raise ValueError("Type %s not found for message:\n%s"\
-                                    %(part_type, etree.tostring(x)))
+                                    %(part_type, etree.tostring(x).decode()))
                 parts.append([part_name, cls])
             messages[message_name] = message.Message(message_name,
                                                      parts)
@@ -128,16 +128,16 @@ class WSDLParser(object):
                 xin = xop.findall('./{%s}input' %xmlnamespace.NS_WSDL)
                 if not(xin):
                     raise ValueError("No input message in operation: \n%s"\
-                                     %(etree.tostring(xop)))
+                                     %(etree.tostring(xop).decode()))
                 in_name = xin[0].get("message", "")
-                if not(messages.has_key(in_name)):
+                if not in_name in messages:
                     raise ValueError("Message %s not found." %in_name)
                 in_cl = messages[in_name]
                 out_cl = None
                 xout = xop.findall('./{%s}output' %xmlnamespace.NS_WSDL)
                 if xout:
                     out_name = xout[0].get("message", "")
-                    if not(messages.has_key(out_name)):
+                    if not out_name in messages:
                         raise ValueError("Message %s not found." %in_name)
                     out_cl = messages[out_name]
 
@@ -176,8 +176,8 @@ class WSDLParser(object):
             b_type = xb.get("type", None)
             if b_type is None:
                 raise ValueError("No type in binding %s"\
-                                    %(etree.tostring(xb)))
-            if not(operations.has_key(b_type)):
+                                    %(etree.tostring(xb).decode()))
+            if not b_type in operations:
                 raise ValueError("Binding type %s no in operations" %b_type)
             xb_soap = xb.findall("./{%s}binding" %xmlnamespace.NS_SOAP)
             if not(xb_soap):
@@ -192,7 +192,7 @@ class WSDLParser(object):
             xops = xb.findall("./{%s}operation" %xmlnamespace.NS_WSDL)
             for xop in xops:
                 op_name = xop.get("name", "")
-                if not(ops.has_key(op_name)):
+                if not op_name in ops:
                     raise ValueError("operation %s no in operations"\
                                     %op_name)
                 soap_op = xop.find("./{%s}operation" %xmlnamespace.NS_SOAP)
@@ -206,7 +206,7 @@ class WSDLParser(object):
                     xop_in_body = xop_in.find("./{%s}body" %xmlnamespace.NS_SOAP)
                     if xop_in_body is None:
                         raise ValueError("No body found for %s"\
-                                    %(etree.tostring(xop)))
+                                    %(etree.tostring(xop).decode()))
                     if xop_in_body.get("use") != "literal":
                         all_literal = False
                     parts = xop_in_body.get("parts")
@@ -226,7 +226,7 @@ class WSDLParser(object):
                     xop_out_body = xop_out.find("./{%s}body" %xmlnamespace.NS_SOAP)
                     if xop_out_body is None:
                         raise ValueError("No body found for %s"\
-                                    %(etree.tostring(xop)))
+                                    %(etree.tostring(xop).decode()))
                     if xop_out_body.get("use") != "literal":
                         all_literal = False
                     parts = xop_out_body.get("parts")
@@ -275,7 +275,7 @@ class WSDLParser(object):
                 if not(xaddr):
                     continue # no soap 11
                 loc = xaddr[0].get("location", "")
-                if bindings.has_key(b):
+                if b in bindings:
                     for k,v in bindings[b].items():
                         v.location = loc
                     services[s_name] = bindings[b]

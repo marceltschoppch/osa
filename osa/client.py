@@ -6,8 +6,8 @@
     Top level access to SOAP service.
 """
 
-import xmlnamespace
-import wsdl
+from . import xmlnamespace
+from . import wsdl
 
 def str_for_containers(self):
     """
@@ -123,16 +123,16 @@ class Client(object):
         types = {}
         for k, v in self._types.items():
             short_name = xmlnamespace.get_local_name(k)
-            if types.has_key(short_name):
+            if short_name in types:
                 counter = 1
                 while True:
                     new_name = "%s_%d" %(short_name, counter)
                     counter += 1
-                    if not(types.has_key(new_name)):
+                    if not new_name in types:
                         short_name = new_name
                         break
             types[short_name] = v
-        types["_container"] = types.keys()
+        types["_container"] = list(types)
         types["__str__"] = str_for_containers
         types["__repr__"] = str_for_containers
         self.types = type('TypesDispatcher', (), types)()
@@ -157,16 +157,16 @@ class Client(object):
                 attr_name : hot to attach service, i.e. self.service_1
                 methods : dict of service methods
             """
-            methods["_container"] = methods.keys()
+            methods["_container"] = list(methods)
             methods["__str__"] = str_for_containers
             methods["__repr__"] = str_for_containers
             setattr(self, attr_name,
                     type('ServiceDispatcher', (), methods)())
             self.names.append("%s %s" %(attr_name, name))
 
-        if len(self._services.keys()) == 1:
-            create(self._services.keys()[0], "service",
-                   self._services.items()[0][1])
+        if len(self._services) == 1:
+            l = list(self._services)
+            create(l[0], "service", self._services[l[0]])
         else:
             counter = 1
             for k, v in self._services.items():

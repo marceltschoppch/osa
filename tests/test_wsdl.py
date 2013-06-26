@@ -23,9 +23,9 @@ ns2 = "de.mpg.ipp.hgw.boz.gsoap.helloworld.types"
 class TestWSDL(unittest.TestCase):
     def test_reading(self):
         w = WSDLParser(wsdl_url)
-        self.assertEquals(w.wsdl_url, wsdl_url)
-        self.assertEquals(w.tns, "de.mpg.ipp.hgw.boz.gsoap.helloworld")
-        self.assertEquals(type(w.wsdl), type(etree.Element('root')))
+        self.assertEqual(w.wsdl_url, wsdl_url)
+        self.assertEqual(w.tns, "de.mpg.ipp.hgw.boz.gsoap.helloworld")
+        self.assertEqual(type(w.wsdl), type(etree.Element('root')))
 
     def test_get_types(self):
         w = WSDLParser(wsdl_url)
@@ -66,24 +66,24 @@ class TestWSDL(unittest.TestCase):
                  "faultyThingResponse", "sayHello",
                  "sayHelloResponse")
         for n in names:
-            self.assertTrue(msgs.has_key("{%s}%s" %(ns1, n)))
+            self.assertTrue("{%s}%s" %(ns1, n) in msgs)
             m = msgs["{%s}%s" %(ns1, n)]
             self.assertTrue(isinstance(m, Message))
-            self.assertEquals(m.name, "{%s}%s" %(ns1, n))
-            self.assertEquals(len(m.parts), 1)
-            self.assertEquals(len(m.parts[0]), 2)
-            self.assertEquals(m.parts[0][0], "parameters")
+            self.assertEqual(m.name, "{%s}%s" %(ns1, n))
+            self.assertEqual(len(m.parts), 1)
+            self.assertEqual(len(m.parts[0]), 2)
+            self.assertEqual(m.parts[0][0], "parameters")
 
     def test_get_operations(self):
         w = WSDLParser(wsdl_url)
         types = w.get_types()
         msgs = w.get_messages(types)
         ops = w.get_operations(msgs)
-        self.assertTrue(ops.has_key("{%s}HelloWorldServicePortType" %ns1))
+        self.assertTrue("{%s}HelloWorldServicePortType" %ns1 in ops)
         ops = ops["{%s}HelloWorldServicePortType" %ns1]
         names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
         for n in names:
-            self.assertTrue(ops.has_key(n))
+            self.assertTrue(n in ops)
             op = ops[n]
             self.assertTrue(isinstance(op, Method))
             self.assertTrue(isinstance(op.input, Message))
@@ -107,21 +107,21 @@ class TestWSDL(unittest.TestCase):
         ops = w.get_operations(msgs)
         bs = w.get_bindings(ops)
         ops = ops["{%s}HelloWorldServicePortType" %ns1]
-        self.assertTrue(bs.has_key("{%s}HelloWorldService" %ns1))
+        self.assertTrue("{%s}HelloWorldService" %ns1 in bs)
         bs = bs["{%s}HelloWorldService" %ns1]
         names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
         for n in names:
-            self.assertTrue(bs.has_key(n))
+            self.assertTrue(n in bs)
             b = bs[n]
             op = ops[n]
             self.assertTrue(b is op)
             self.assertTrue(b.input.use_parts is not None)
-            self.assertEquals(len(b.input.use_parts), 1)
-            self.assertEquals(b.input.use_parts[0][0], "parameters")
+            self.assertEqual(len(b.input.use_parts), 1)
+            self.assertEqual(b.input.use_parts[0][0], "parameters")
             if n != "testMe":
-                self.assertEquals(len(b.output.use_parts), 1)
-                self.assertEquals(b.output.use_parts[0][0], "parameters")
-            self.assertEquals(b.action, "")
+                self.assertEqual(len(b.output.use_parts), 1)
+                self.assertEqual(b.output.use_parts[0][0], "parameters")
+            self.assertEqual(b.action, "")
 
     def test_get_services(self):
         w = WSDLParser(wsdl_url)
@@ -131,15 +131,15 @@ class TestWSDL(unittest.TestCase):
         bs = w.get_bindings(ops)
         ss = w.get_services(bs)
         bs = bs["{%s}HelloWorldService" %ns1]
-        self.assertTrue(ss.has_key("HelloWorldService"))
+        self.assertTrue("HelloWorldService" in ss)
         ss = ss["HelloWorldService"]
         names = ("testMe", "giveMessage", "echoString", "faultyThing", "sayHello")
         for n in names:
-            self.assertTrue(ss.has_key(n))
+            self.assertTrue(n in ss)
             s = ss[n]
             b = bs[n]
             self.assertTrue(s is b)
-            self.assertEquals(s.location, "http://lxpowerboz:88/services/cpp/HelloWorldService")
+            self.assertEqual(s.location, "http://lxpowerboz:88/services/cpp/HelloWorldService")
 
 
 if __name__ == '__main__':

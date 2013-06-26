@@ -15,7 +15,12 @@ from osa.client import *
 from osa.wsdl import *
 from osa.method import *
 from osa.xmltypes import *
-import urllib2
+import sys
+if sys.version_info.major < 3:
+    from urllib2 import urlopen, HTTPError, URLError
+else:
+    from urllib.request import urlopen, HTTPError, URLError
+    basestring = str
 
 wsdl_url = 'http://lxpowerboz:88/services/python/HelloWorldService?wsdl'
 
@@ -25,39 +30,39 @@ class TestClient(unittest.TestCase):
     def tearDown(self):
         self.client = None
     def test_init(self):
-        self.assertEquals(self.client.names, ["service HelloWorldService",])
+        self.assertEqual(self.client.names, ["service HelloWorldService",])
         for t in ("Person", "Name", "echoString", "sayHello"):
             self.assertTrue(hasattr(self.client.types, t))
-            self.assertEquals(type(getattr(self.client.types, t)), ComplexTypeMeta)
+            self.assertEqual(type(getattr(self.client.types, t)), ComplexTypeMeta)
         for method in ("testMe", "giveMessage", "echoString", "sayHello", "faultyThing"):
             self.assertTrue(hasattr(self.client.service, method))
-            self.assertEquals(type(getattr(self.client.service, method)), Method)
+            self.assertEqual(type(getattr(self.client.service, method)), Method)
 
     def test_giveMessage(self):
         try:
-            urllib2.urlopen("http://lxpowerboz:88")
-        except urllib2.HTTPError:
+            urlopen("http://lxpowerboz:88")
+        except HTTPError:
             pass
-        except urllib2.URLError:
+        except URLError:
             return
         res = self.client.service.giveMessage()
-        self.assertTrue(isinstance(res, str))
+        self.assertTrue(isinstance(res, basestring))
 
     def test_echoString(self):
         try:
-            urllib2.urlopen("http://lxpowerboz:88")
-        except urllib2.HTTPError:
+            urlopen("http://lxpowerboz:88")
+        except HTTPError:
             pass
-        except urllib2.URLError:
+        except URLError:
             return
-        self.assertEquals('my message 1', self.client.service.echoString('my message 1'))
+        self.assertEqual('my message 1', self.client.service.echoString('my message 1'))
 
     def test_sayHello(self):
         try:
-            urllib2.urlopen("http://lxpowerboz:88")
-        except urllib2.HTTPError:
+            urlopen("http://lxpowerboz:88")
+        except HTTPError:
             pass
-        except urllib2.URLError:
+        except URLError:
             return
         n = self.client.types.Name()
         n.firstName = "first"
@@ -67,14 +72,14 @@ class TestClient(unittest.TestCase):
         p.age = 30
         p.weight = 80
         p.height = 175
-        self.assertEquals(['Hello, first\n']*5, self.client.service.sayHello(p, 5))
+        self.assertEqual(['Hello, first\n']*5, self.client.service.sayHello(p, 5))
 
     def test_faultyThing(self):
         try:
-            urllib2.urlopen("http://lxpowerboz:88")
-        except urllib2.HTTPError:
+            urlopen("http://lxpowerboz:88")
+        except HTTPError:
             pass
-        except urllib2.URLError:
+        except URLError:
             return
         try:
             self.client.service.faultyThing()

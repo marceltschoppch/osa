@@ -5,9 +5,9 @@
 """
     Conversion of XML Schema types into Python classes.
 """
-import xmlnamespace
-import xmltypes
-import xmlparser
+from . import xmlnamespace
+from . import xmltypes
+from . import xmlparser
 import xml.etree.cElementTree as etree
 
 class XMLSchemaParser(object):
@@ -122,7 +122,7 @@ class XMLSchemaParser(object):
             if name is not None:
                 name = "{%s}%s" %(self.tns, name)
                 el.set("qualified", self.qualified)
-                if not(types.has_key(name)):
+                if not name in types:
                     types[name] = el
 
         #go over all children and append their types
@@ -147,9 +147,9 @@ class XMLSchemaParser(object):
             out : dictionary name -> Python class
         """
         types = {} 
-        for k in xtypes.keys():
+        for k in xtypes:
             #if the class was already created as a parent of another class, do nothing
-            if types.has_key(k):
+            if k in types:
                 continue
             x = xtypes[k]
             XMLSchemaParser.create_type(k, x, xtypes, types)
@@ -231,11 +231,11 @@ class XMLSchemaParser(object):
         """
         if name is None:
             return
-        elif xmltypes.primmap.has_key(name):
+        elif name in xmltypes.primmap:
             cl = xmltypes.primmap[name]
-        elif types.has_key(name):
+        elif name in types:
             cl = types[name]
-        elif not(xtypes.has_key(name)):
+        elif not name in xtypes:
             raise ValueError(" Class %s not found in anywhere" %(name))
         else:
             XMLSchemaParser.create_type(name,

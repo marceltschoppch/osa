@@ -76,16 +76,16 @@ class TestClassSerializer(unittest.TestCase):
         element = etree.Element('test')
         a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
-        self.assertEquals(5, len(element.getchildren()))
+        self.assertEqual(5, len(element.getchildren()))
 
         r = Address().from_xml(element)
 
-        self.assertEquals(a.street, r.street)
-        self.assertEquals(a.city, r.city)
-        self.assertEquals(a.zip, r.zip)
-        self.assertEquals(a.lattitude, r.lattitude)
-        self.assertEquals(a.longitude, r.longitude)
-        self.assertEquals(a.since, r.since)
+        self.assertEqual(a.street, r.street)
+        self.assertEqual(a.city, r.city)
+        self.assertEqual(a.zip, r.zip)
+        self.assertEqual(a.lattitude, r.lattitude)
+        self.assertEqual(a.longitude, r.longitude)
+        self.assertEqual(a.since, r.since)
 
     def test_nested_class(self):
         p = Person()
@@ -93,10 +93,10 @@ class TestClassSerializer(unittest.TestCase):
         p.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(None, p.name)
-        self.assertEquals(None, p.birthdate)
-        self.assertEquals(None, p.age)
-        self.assertEquals(None, p.addresses)
+        self.assertEqual(None, p.name)
+        self.assertEqual(None, p.birthdate)
+        self.assertEqual(None, p.age)
+        self.assertEqual(None, p.addresses)
 
     def test_complex_class(self):
         l = Level1()
@@ -121,14 +121,14 @@ class TestClassSerializer(unittest.TestCase):
         element = element[0]
         l1 = Level1().from_xml(element)
 
-        self.assertEquals(l1.level2.arg1, l.level2.arg1)
-        self.assertEquals(l1.level2.arg2, l.level2.arg2)
-        self.assertEquals(len(l1.level4), len(l.level4))
-        self.assertEquals(len(l1.level3), len(l.level3))
+        self.assertEqual(l1.level2.arg1, l.level2.arg1)
+        self.assertEqual(l1.level2.arg2, l.level2.arg2)
+        self.assertEqual(len(l1.level4), len(l.level4))
+        self.assertEqual(len(l1.level3), len(l.level3))
         for i in range(100):
-            self.assertEquals(l1.level3[i].arg1, l.level3[i].arg1)
+            self.assertEqual(l1.level3[i].arg1, l.level3[i].arg1)
         for i in range(4):
-            self.assertEquals(l1.level4[i].arg1, l.level4[i].arg1)
+            self.assertEqual(l1.level4[i].arg1, l.level4[i].arg1)
 
 
     def test_any(self):
@@ -150,12 +150,12 @@ class TestClassSerializer(unittest.TestCase):
         r = XMLAny().from_xml(element)
         self.assertTrue(isinstance(r, Address))
 
-        self.assertEquals(a.street, r.street)
-        self.assertEquals(a.city, r.city)
-        self.assertEquals(a.zip, r.zip)
-        self.assertEquals(a.lattitude, r.lattitude)
-        self.assertEquals(a.longitude, r.longitude)
-        self.assertEquals(a.since, r.since)
+        self.assertEqual(a.street, r.street)
+        self.assertEqual(a.city, r.city)
+        self.assertEqual(a.zip, r.zip)
+        self.assertEqual(a.lattitude, r.lattitude)
+        self.assertEqual(a.longitude, r.longitude)
+        self.assertEqual(a.since, r.since)
     def test_tofrom_file(self):
         fname = "out.xml"
         a = Address()
@@ -170,7 +170,7 @@ class TestClassSerializer(unittest.TestCase):
             pass
         a.to_file(fname)
         b = Address.from_file(fname)
-        self.assertEquals(b, a)
+        self.assertEqual(b, a)
         self.assertTrue(b is not a)
 
 if __name__ == '__main__':

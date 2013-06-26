@@ -5,9 +5,13 @@
 """
     SOAP operation class.
 """
-import xmlnamespace
-import xmlparser
-from urllib2 import urlopen, Request, HTTPError
+from . import xmlnamespace
+from . import xmlparser
+import sys
+if sys.version_info.major < 3:
+    from urllib2 import urlopen, Request, HTTPError
+else:
+    from urllib.request import urlopen, Request, HTTPError
 import xml.etree.cElementTree as etree
 
 #some standard stuff
@@ -123,7 +127,7 @@ class Method(object):
                 return None
             else:
                 raise RuntimeError("Bad HTTP status code: %d" %response.code)
-        except HTTPError, e:
+        except HTTPError as e:
             if e.code == 500:
                 #read http error body and make xml from it
                 try:

@@ -23,29 +23,29 @@ class TestPrimitive(unittest.TestCase):
         s.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element=element[0]
 
-        self.assertEquals(element.text, 'value')
+        self.assertEqual(element.text, 'value')
         value = XMLString().from_xml(element)
-        self.assertEquals(value, 'value')
+        self.assertEqual(value, 'value')
     
     def test_stringenumeration(self):
         XMLStringEnumeration._allowedValues = ["me", "you"]
         s1 = XMLStringEnumeration("me")
-        self.assertEquals(s1.value, "me")
+        self.assertEqual(s1.value, "me")
         s2 = XMLStringEnumeration("he")
-        self.assertEquals(s2.value, "he")
+        self.assertEqual(s2.value, "he")
 
         #toxml
         element = etree.Element('test')
         s1.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element=element[0]
-        self.assertEquals(element.text, 'me')
+        self.assertEqual(element.text, 'me')
 
         element2 = etree.Element('test')
         self.assertRaises(ValueError, s2.to_xml, element2, "{%s}%s" %(ns_test, "atach"))
 
         #back
         value = XMLStringEnumeration().from_xml(element)
-        self.assertEquals(value, 'me')
+        self.assertEqual(value, 'me')
         element.text="he"
         self.assertRaises(ValueError, XMLStringEnumeration().from_xml, element)
 
@@ -56,9 +56,9 @@ class TestPrimitive(unittest.TestCase):
         d.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(element.text, d.value.isoformat())
+        self.assertEqual(element.text, d.value.isoformat())
         dt = XMLDateTime().from_xml(element)
-        self.assertEquals(d.value, dt)
+        self.assertEqual(d.value, dt)
 
     def test_date(self):
         x = datetime.now()
@@ -69,9 +69,9 @@ class TestPrimitive(unittest.TestCase):
         d.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(element.text, d.value.isoformat())
+        self.assertEqual(element.text, d.value.isoformat())
         dt = XMLDate().from_xml(element)
-        self.assertEquals(d.value, dt)
+        self.assertEqual(d.value, dt)
 
     def test_integer(self):
         integer = XMLInteger(12)
@@ -80,9 +80,9 @@ class TestPrimitive(unittest.TestCase):
         integer.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(element.text, '12')
+        self.assertEqual(element.text, '12')
         value = XMLInteger().from_xml(element)
-        self.assertEquals(value, integer)
+        self.assertEqual(value, integer)
 
     def test_large_integer(self):
         integer = XMLInteger(128375873458473)
@@ -91,9 +91,9 @@ class TestPrimitive(unittest.TestCase):
         integer.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(element.text, '128375873458473')
+        self.assertEqual(element.text, '128375873458473')
         value = XMLInteger().from_xml(element)
-        self.assertEquals(value, integer)
+        self.assertEqual(value, integer)
 
     def test_float(self):
         f = XMLDouble(1.0/3.0)
@@ -101,51 +101,51 @@ class TestPrimitive(unittest.TestCase):
         f.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
 
-        self.assertEquals(element.text, repr(f))
+        self.assertEqual(element.text, repr(f))
 
         f2 = XMLDouble().from_xml(element)
-        self.assertEquals(f2, f)
+        self.assertEqual(f2, f)
 
     def test_unicode(self):
-        s = XMLString(u'\x34\x55\x65\x34')
-        self.assertEquals(4, len(s))
+        s = XMLString('\x34\x55\x65\x34')
+        self.assertEqual(4, len(s))
         element = etree.Element('test')
         s.to_xml(element, "{%s}%s" %(ns_test, "atach"))
         element = element[0]
         value = XMLString().from_xml(element)
-        self.assertEquals(value, s)
+        self.assertEqual(value, s)
 
     def test_boolean(self):
         b = etree.Element('test')
         XMLBoolean(True).to_xml(b, "{%s}%s" %(ns_test, "atach"))
         b = b[0]
-        self.assertEquals('true', b.text)
+        self.assertEqual('true', b.text)
 
         b = etree.Element('test')
         XMLBoolean(0).to_xml(b, "{%s}%s" %(ns_test, "atach"))
         b = b[0]
-        self.assertEquals('false', b.text)
+        self.assertEqual('false', b.text)
 
         b = etree.Element('test')
         XMLBoolean(1).to_xml(b, "{%s}%s" %(ns_test, "atach"))
         b = b[0]
-        self.assertEquals('true', b.text)
+        self.assertEqual('true', b.text)
 
         b = XMLBoolean().from_xml(b)
-        self.assertEquals(b, True)
+        self.assertEqual(b, True)
 
         b = etree.Element('test')
         XMLBoolean(False).to_xml(b, "{%s}%s" %(ns_test, "atach"))
         b = b[0]
-        self.assertEquals('false', b.text)
+        self.assertEqual('false', b.text)
 
         b = XMLBoolean().from_xml(b)
-        self.assertEquals(b, False)
+        self.assertEqual(b, False)
 
         b = etree.Element('test')
         b.text = ''
         b = XMLBoolean().from_xml(b)
-        self.assertEquals(b, None)
+        self.assertEqual(b, None)
 
     def test_any(self):
         #test any from_xml, the other way is
@@ -156,19 +156,19 @@ class TestPrimitive(unittest.TestCase):
         #no type => xml
         inst = XMLAny()
         v = inst.from_xml(element)
-        self.assertEquals(type(v).__name__ , "Element")
+        self.assertEqual(type(v).__name__ , "Element")
 
         #float
         element.set("{%s}type" %xmlnamespace.NS_XSI, "{%s}float" %xmlnamespace.NS_XSD)
         v = inst.from_xml(element)
-        self.assertEquals(v.__class__.__name__, "float")
-        self.assertEquals(v, 10.0)
+        self.assertEqual(v.__class__.__name__, "float")
+        self.assertEqual(v, 10.0)
 
         #string
         element.set("{%s}type" %xmlnamespace.NS_XSI, "{%s}string" %xmlnamespace.NS_XSD)
         v = inst.from_xml(element)
-        self.assertEquals(v.__class__.__name__, "str")
-        self.assertEquals(v, "10.0")
+        self.assertEqual(v.__class__.__name__, "str")
+        self.assertEqual(v, "10.0")
 
 
 

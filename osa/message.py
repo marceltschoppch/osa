@@ -5,8 +5,8 @@
 """
    Python class for input/output messages.
 """
-import xmlnamespace
-import xmltypes
+from . import xmlnamespace
+from . import xmltypes
 import xml.etree.cElementTree as etree
 
 class Message(object):
@@ -65,8 +65,7 @@ class Message(object):
             for child in getattr(p, "_children", []):
                 opt = ''
                 array = ''
-                if child['max']>1:
-                     # 'unbounded'>1
+                if child['max'].__class__.__name__ != "int" or child['max']>1:
                      array = '[]'
                 if child['min']==0:
                     opt = '| None'
@@ -77,8 +76,7 @@ class Message(object):
             for child in getattr(p, "_children", []):
                 opt = ''
                 array = ''
-                if child['max']>1:
-                     # 'unbounded'>1
+                if child['max'].__class__.__name__ != "int" or child['max']>1:
                      array = '[]'
                 if child['min']==0:
                     opt = '| None'
@@ -89,8 +87,7 @@ class Message(object):
             child = p._children[0]
             opt = ''
             array = ''
-            if child['max']>1:
-                 # 'unbounded'>1
+            if child['max'].__class__.__name__ != "int" or child['max']>1:
                  array = '[]'
             if child['min']==0:
                 opt = '| None'

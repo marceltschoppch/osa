@@ -46,21 +46,21 @@ class TestMessage(unittest.TestCase):
         name.firstName = "bobo"
         name.lastName = "khnyk"
         message.to_xml(name, _body=root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(root[0].tag, "{vostok}Name")
-        self.assertEquals(len(root[0]), 2)
+        self.assertEqual(len(root), 1)
+        self.assertEqual(root[0].tag, "{vostok}Name")
+        self.assertEqual(len(root[0]), 2)
         #positional parameters
         root = etree.Element("root")
         message.to_xml("bobik", "sharikov", _body=root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(root[0].tag, "{vostok}Name")
-        self.assertEquals(len(root[0]), 2)
+        self.assertEqual(len(root), 1)
+        self.assertEqual(root[0].tag, "{vostok}Name")
+        self.assertEqual(len(root[0]), 2)
         #keyword parameters
         root = etree.Element("root")
         message.to_xml(lastName = "zaa", firstName="yoyo", _body=root)
-        self.assertEquals(len(root), 1)
-        self.assertEquals(root[0].tag, "{vostok}Name")
-        self.assertEquals(len(root[0]), 2)
+        self.assertEqual(len(root), 1)
+        self.assertEqual(root[0].tag, "{vostok}Name")
+        self.assertEqual(len(root[0]), 2)
 
     def test_fromxml(self):
         root = etree.Element("Name")
@@ -75,9 +75,9 @@ class TestMessage(unittest.TestCase):
                                   ])
         message.use_parts = [message.parts[1]]
         res = message.from_xml(root)
-        self.assertEquals(res.__class__.__name__, "Name")
-        self.assertEquals(res.firstName, "kolo")
-        self.assertEquals(res.lastName, "bok")
+        self.assertEqual(res.__class__.__name__, "Name")
+        self.assertEqual(res.firstName, "kolo")
+        self.assertEqual(res.lastName, "bok")
 
 
 if __name__ == '__main__':
