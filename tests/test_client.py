@@ -3,11 +3,12 @@
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
 # Licensed under GPLv3 or later, see the COPYING file.
 
+import os
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
-sys.path.append("../")
+# for x in sys.path:
+#     if x.find("osa") != -1:
+#         sys.path.remove(x)
+# sys.path.append("../")
 
 import unittest
 import xml.etree.cElementTree as etree
@@ -23,17 +24,24 @@ else:
     basestring = str
 
 wsdl_url = 'http://lxpowerboz:88/services/python/HelloWorldService?wsdl'
+test_path = os.path.abspath(os.path.dirname(__file__))
+
 
 class TestClient(unittest.TestCase):
+
     def setUp(self):
-        self.client = Client("test.wsdl")
+        self.client = Client("%s/test.wsdl" % test_path)
+
     def tearDown(self):
         self.client = None
+
     def test_init(self):
-        self.assertEqual(self.client.names, ["service HelloWorldService",])
+        self.assertEqual(self.client.names, ["service HelloWorldService"])
+
         for t in ("Person", "Name", "echoString", "sayHello"):
             self.assertTrue(hasattr(self.client.types, t))
             self.assertEqual(type(getattr(self.client.types, t)), ComplexTypeMeta)
+
         for method in ("testMe", "giveMessage", "echoString", "sayHello", "faultyThing"):
             self.assertTrue(hasattr(self.client.service, method))
             self.assertEqual(type(getattr(self.client.service, method)), Method)

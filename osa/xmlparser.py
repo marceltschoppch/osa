@@ -14,7 +14,8 @@ else:
 
 default_attr = ["type", "base", "element", "message", "binding", "ref"]
 
-def parse_qualified(f, attr = None):
+
+def parse_qualified(f, attr=None):
     """
         Parse xml from file-like object and make changes to qualified values.
 
@@ -39,9 +40,9 @@ def parse_qualified(f, attr = None):
     if attr is None:
         attr = default_attr
 
-    #iterative parsing is done after an example on
-    #http://effbot.org/zone/element-namespaces.htm
-    ns_map = [] #stack of defined prefixes and values
+    # iterative parsing is done after an example on
+    # http://effbot.org/zone/element-namespaces.htm
+    ns_map = []  # stack of defined prefixes and values
     events = ("start", "start-ns", "end-ns")
     # start - begin of a new element
     # start-ns - opening of a new namespace
@@ -50,33 +51,34 @@ def parse_qualified(f, attr = None):
 
     for event, element in etree.iterparse(f, events):
         if event == "start-ns":
-            #in this case element is a pair (prefix, value)
+            # in this case element is a pair (prefix, value)
             ns_map.append(element)
         elif event == "end-ns":
             ns_map.pop()
         elif event == "start":
             if root is None:
                 root = element
-            #check that this element has an attribute of interest
+            # check that this element has an attribute of interest
             for a in element.attrib:
                 if a in attr:
-                    #check the attribute value is qualified
-                    vlist =  element.attrib[a].split(":")
+                    # check the attribute value is qualified
+                    vlist = element.attrib[a].split(":")
                     if len(vlist) == 2:
-                        #search for the namespace prefix
+                        # search for the namespace prefix
                         for ns in ns_map:
                             if ns[0] == vlist[0]:
-                                #got it
-                                element.attrib[a] = "{%s}%s" %(ns[1], vlist[1])
+                                # got it
+                                element.attrib[a] = "{%s}%s" % (ns[1], vlist[1])
     return root
 
-def parse_qualified_from_url(url, attr = None, wsdl_url=None):
+
+def parse_qualified_from_url(url, attr=None, wsdl_url=None):
     """
         The same as `parse_qualified`, but xml is given by its url.
 
         URL is either  http://, or a file if that prefix is not present.
     """
-    #open page - get a file like object and
+    # open page - get a file like object and
     # parse it into xml
     try:
         # opens http://, https://, file://
@@ -86,13 +88,17 @@ def parse_qualified_from_url(url, attr = None, wsdl_url=None):
             # url is something /path/to/file, use open directly
             page_handler = open(url, 'r')
         except IOError:
-            try:
-                # local file isn't found, try to get remote file with
-                # wsdl_url 'directory' + filename
-                orig_url = url
-                url = wsdl_url.rsplit('/', 1)[0] + '/' + url
-                page_handler = urlopen(url)
-            except (HTTPError, ValueError):
+            page_handler = None
+            orig_url = url
+            if wsdl_url:
+                try:
+                    # local file isn't found, try to get remote file with
+                    # wsdl_url 'directory' + filename
+                    url = wsdl_url.rsplit('/', 1)[0] + '/' + url
+                    page_handler = urlopen(url)
+                except (HTTPError, ValueError):
+                    pass
+            if not page_handler:
                 raise ValueError("Can not found '%s'." % orig_url)
 
     root = parse_qualified(page_handler, attr=attr)

@@ -9,6 +9,7 @@
 from . import xmlnamespace
 from . import wsdl
 
+
 def str_for_containers(self):
     """
         Nice printing for types and method containers.
@@ -22,12 +23,13 @@ def str_for_containers(self):
     res = ''
     for child in cont:
         descr = str(getattr(getattr(self, child, None), '__doc__', None))
-        if len(descr)>100:
-            descr = descr[:100] + "..."
-        descr = descr.replace("\n", "\n\t")
-        res = res + '\n%s\n\t%s' %(child, descr)
+        if len(descr) > 100:
+            descr = descr[:100] + '...'
+        descr = descr.replace('\n', '\n\t')
+        res = res + '\n%s\n\t%s' % (child, descr)
     res = res[1:]
     return res
+
 
 class Client(object):
     """
@@ -126,15 +128,15 @@ class Client(object):
             if short_name in types:
                 counter = 1
                 while True:
-                    new_name = "%s_%d" %(short_name, counter)
+                    new_name = '%s_%d' % (short_name, counter)
                     counter += 1
                     if not new_name in types:
                         short_name = new_name
                         break
             types[short_name] = v
-        types["_container"] = list(types)
-        types["__str__"] = str_for_containers
-        types["__repr__"] = str_for_containers
+        types['_container'] = list(types)
+        types['__str__'] = str_for_containers
+        types['__repr__'] = str_for_containers
         self.types = type('TypesDispatcher', (), types)()
 
     def create_services_containers(self):
@@ -157,31 +159,29 @@ class Client(object):
                 attr_name : hot to attach service, i.e. self.service_1
                 methods : dict of service methods
             """
-            methods["_container"] = list(methods)
-            methods["__str__"] = str_for_containers
-            methods["__repr__"] = str_for_containers
+            methods['_container'] = list(methods)
+            methods['__str__'] = str_for_containers
+            methods['__repr__'] = str_for_containers
             setattr(self, attr_name,
                     type('ServiceDispatcher', (), methods)())
-            self.names.append("%s %s" %(attr_name, name))
+            self.names.append('%s %s' % (attr_name, name))
 
         if len(self._services) == 1:
             l = list(self._services)
-            create(l[0], "service", self._services[l[0]])
+            create(l[0], 'service', self._services[l[0]])
         else:
             counter = 1
             for k, v in self._services.items():
-                attr_name = "service_%d" %counter
+                attr_name = 'service_%d' % counter
                 counter += 1
                 create(k, attr_name, v)
 
     def __str__(self):
         res = ''
         for name in self.names:
-            res = res + ', %s' %name
-        res = res[2:] + " from:\n\t%s" %(self.wsdl_url)
+            res = res + ', %s' % name
+        res = res[2:] + ' from:\n\t%s' % (self.wsdl_url)
         return res
 
     def __repr__(self):
         return self.__str__()
-
-

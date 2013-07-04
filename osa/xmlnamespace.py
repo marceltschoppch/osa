@@ -14,6 +14,7 @@ NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
 NS_XSD = "http://www.w3.org/2001/XMLSchema"
 NS_WSDL = 'http://schemas.xmlsoap.org/wsdl/'
 
+
 def get_local_name(full_name):
     """
         Removes namespace part of the name.
