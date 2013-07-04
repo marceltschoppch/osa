@@ -48,7 +48,7 @@ class XMLSchemaParser(object):
             self.qualified = 1
 
         #find and initialize imported ones
-        self.imported = [] 
+        self.imported = []
         imports = self.schema.findall('.//{%s}import' %xmlnamespace.NS_XSD)
         imports.extend(self.schema.findall('.//{%s}include' %xmlnamespace.NS_XSD))
         for schema in imports:
@@ -136,7 +136,7 @@ class XMLSchemaParser(object):
         """
             Convert xml types definitions in the dictionary
             into Python classes.
-            
+
             Parameters
             ----------
             xtypes : dictionary name -> xml element
@@ -146,7 +146,7 @@ class XMLSchemaParser(object):
             -------
             out : dictionary name -> Python class
         """
-        types = {} 
+        types = {}
         for k in xtypes:
             #if the class was already created as a parent of another class, do nothing
             if k in types:
@@ -311,7 +311,7 @@ class XMLSchemaParser(object):
                                   {"_children":[], "__doc__":"no documentation",
                                    "_namespace":cls_ns})
         types[name] = cls
-    
+
 
     @staticmethod
     def create_string_enumeration(name, element, types):
@@ -343,7 +343,7 @@ class XMLSchemaParser(object):
                                 {"_allowedValues":values, "__doc__":doc,
                                   "_namespace":cls_ns})
         types[name] = cls
-        
+
     @staticmethod
     def create_complex_class(name, element, xtypes, types):
         """
@@ -365,7 +365,7 @@ class XMLSchemaParser(object):
         exts = element.findall("./{%s}complexContent/{%s}extension" %(xmlnamespace.NS_XSD, xmlnamespace.NS_XSD))
         if exts is not None:
             for ext in exts:
-                parent_name = ext.get("base", None) 
+                parent_name = ext.get("base", None)
                 parent = XMLSchemaParser.get_type_by_name(parent_name, xtypes, types)
                 parents.append(parent)
 
@@ -412,6 +412,7 @@ class XMLSchemaParser(object):
                 maxOccurs = s.get('maxOccurs', 1)
                 if maxOccurs != 'unbounded':
                     maxOccurs = int(maxOccurs)
+                nillable = s.get('nillable', False) == 'true'
                 #child name is qualified as required, i.e. it is a full name
                 full_child_name = child_name
                 child_name = xmlnamespace.get_local_name(child_name) #class member names!
@@ -419,6 +420,7 @@ class XMLSchemaParser(object):
                     full_child_name = "{%s}%s" %(cls_ns, full_child_name)
                 children.append({ "name":child_name, 'type' : type,
                                  'min' : minOccurs, 'max' : maxOccurs,
+				                 'nillable': nillable,
                                  "fullname": full_child_name})
         #get doc
         doc = XMLSchemaParser.get_doc(element)

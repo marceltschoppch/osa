@@ -169,14 +169,14 @@ class XMLType(object):
                 single.to_xml(element, full_child_name)
                 if child["type"] is XMLAny:
                     #append type information
-                    element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
+                    element[-1].set("{%s}type" %xmlnamespace.NS_XSI,
                             "{%s}%s" %(single._namespace,
                                        single.__class__.__name__) )
                 #try:
                     #single.to_xml(element, full_name)
                     #if child["type"] is XMLAny:
                         ##append type information
-                        #element[-1].set("{%s}type" %xmlnamespace.NS_XSI, 
+                        #element[-1].set("{%s}type" %xmlnamespace.NS_XSI,
                                 #"{%s}%s" %(single._namespace,
                                            #single.__class__.__name__) )
                 #except Exception:
@@ -215,7 +215,8 @@ class XMLType(object):
 
             #check conversion
             if subvalue is None:
-                if self._children[ind]['min'] != 0:
+                if self._children[ind]['min'] != 0 and \
+                   self._children[ind]['nillable'] is False:
                     raise ValueError("Non-nillable %s element is nil." %name)
             else:
                 if self._children[ind]['max'].__class__.__name__ != "int" or\
