@@ -4,9 +4,9 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
+# for x in sys.path:
+#     if x.find("osa") != -1:
+#         sys.path.remove(x)
 sys.path.append("../")
 
 import unittest
@@ -15,19 +15,25 @@ from osa.xmlschema import *
 from osa.xmlparser import *
 from osa.message import *
 
-class TestMessage(unittest.TestCase):
+from . import BaseTest
+
+
+class TestMessage(BaseTest):
+
     def setUp(self):
-        root = parse_qualified_from_url("schema.xml")
+        root = parse_qualified_from_url(self.test_files["schema.xml"])
         schema = XMLSchemaParser(root)
         xtypes = schema.get_list_of_defined_types()
         self.types = XMLSchemaParser.convert_xmltypes_to_python(xtypes)
+
     def tearDown(self):
         self.types = None
+
     def test_toxml(self):
-        message = Message("{vostok}msg", [["add", self.types["{vostok}Person"]],
-                                  ["params", self.types["{vostok}Name"]],
-                                  ["params", self.types["{sever}Car"]],
-                                  ])
+        message = Message("{vostok}msg",
+                          [["add", self.types["{vostok}Person"]],
+                           ["params", self.types["{vostok}Name"]],
+                           ["params", self.types["{sever}Car"]]])
 
         #empty
         root = etree.Element("root")
@@ -79,6 +85,3 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(res.firstName, "kolo")
         self.assertEqual(res.lastName, "bok")
 
-
-if __name__ == '__main__':
-    unittest.main()

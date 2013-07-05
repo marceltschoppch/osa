@@ -4,20 +4,22 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
+import os
+# for x in sys.path:
+#     if x.find("osa") != -1:
+#         sys.path.remove(x)
 sys.path.append("../")
 
 import unittest
 import xml.etree.cElementTree as etree
 from osa.xmlparser import *
 
-class TestXMLParser(unittest.TestCase):
+from . import BaseTest
+
+
+class TestXMLParser(BaseTest):
     def test_ns_attr_parsing(self):
-        root = parse_qualified_from_url("test.xml", attr=["a"])
+        root = parse_qualified_from_url(self.test_files["test.xml"],
+                                        attr=["a"])
         self.assertEqual(root.get("bok"), "ns:round")
         self.assertEqual(root[0].get("a"), "{39kingdom}angry")
-
-if __name__ == '__main__':
-    unittest.main()

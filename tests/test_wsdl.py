@@ -12,13 +12,14 @@ sys.path.append("../")
 import unittest
 import xml.etree.cElementTree as etree
 from osa.wsdl import *
-from osa.method import * 
-from osa.message import * 
+from osa.method import *
+from osa.message import *
 from osa.xmltypes import *
 
 wsdl_url = 'test.wsdl'
 ns1 = "de.mpg.ipp.hgw.boz.gsoap.helloworld"
 ns2 = "de.mpg.ipp.hgw.boz.gsoap.helloworld.types"
+
 
 class TestWSDL(unittest.TestCase):
     def test_reading(self):

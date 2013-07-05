@@ -13,10 +13,12 @@ import unittest
 import xml.etree.cElementTree as etree
 from osa.xmlschema import *
 from osa.xmlparser import *
+from . import BaseTest
 
-class TestXMLSchema(unittest.TestCase):
+
+class TestXMLSchema(BaseTest):
     def setUp(self):
-        root = parse_qualified_from_url("schema.xml")
+        root = parse_qualified_from_url(self.test_files["schema.xml"])
         self.schema = XMLSchemaParser(root)
     def tearDown(self):
         self.schema = None

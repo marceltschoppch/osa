@@ -14,9 +14,13 @@ from datetime import datetime
 import unittest
 import xml.etree.cElementTree as etree
 
+from . import BaseTest
+
 ns_test = 'test_namespace'
 
-class TestPrimitive(unittest.TestCase):
+
+class TestPrimitive(BaseTest):
+
     def test_string(self):
         s = XMLString("value")
         element = etree.Element('test')
@@ -26,7 +30,7 @@ class TestPrimitive(unittest.TestCase):
         self.assertEqual(element.text, 'value')
         value = XMLString().from_xml(element)
         self.assertEqual(value, 'value')
-    
+
     def test_stringenumeration(self):
         XMLStringEnumeration._allowedValues = ["me", "you"]
         s1 = XMLStringEnumeration("me")
@@ -169,10 +173,3 @@ class TestPrimitive(unittest.TestCase):
         v = inst.from_xml(element)
         self.assertEqual(v.__class__.__name__, "str")
         self.assertEqual(v, "10.0")
-
-
-
-
-
-if __name__ == '__main__':
-    unittest.main()

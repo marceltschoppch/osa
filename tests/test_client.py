@@ -8,15 +8,15 @@ import sys
 # for x in sys.path:
 #     if x.find("osa") != -1:
 #         sys.path.remove(x)
-# sys.path.append("../")
+sys.path.append("../")
 
 import unittest
-import xml.etree.cElementTree as etree
-from osa.client import *
+# import xml.etree.cElementTree as etree
+from osa.client import Client
 from osa.wsdl import *
 from osa.method import *
 from osa.xmltypes import *
-import sys
+from . import BaseTest
 if sys.version_info.major < 3:
     from urllib2 import urlopen, HTTPError, URLError
 else:
@@ -27,10 +27,10 @@ wsdl_url = 'http://lxpowerboz:88/services/python/HelloWorldService?wsdl'
 test_path = os.path.abspath(os.path.dirname(__file__))
 
 
-class TestClient(unittest.TestCase):
+class TestClient(BaseTest):
 
     def setUp(self):
-        self.client = Client("%s/test.wsdl" % test_path)
+        self.client = Client(self.test_files['test.wsdl'])
 
     def tearDown(self):
         self.client = None
@@ -93,7 +93,3 @@ class TestClient(unittest.TestCase):
             self.client.service.faultyThing()
         except RuntimeError as e:
             self.assertFalse(str(e).find('4u!') == -1)
-
-
-if __name__ == '__main__':
-    unittest.main()
