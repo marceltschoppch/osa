@@ -4,18 +4,13 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-# for x in sys.path:
-#     if x.find("osa") != -1:
-#         sys.path.remove(x)
-sys.path.append("../")
-
-import unittest
-import xml.etree.cElementTree as etree
+sys.path.insert(0, "../")
 from osa.xmlschema import *
 from osa.xmlparser import *
 from osa.message import *
-
-from . import BaseTest
+from tests.base import BaseTest
+import xml.etree.cElementTree as etree
+import unittest
 
 
 class TestMessage(BaseTest):
@@ -84,4 +79,3 @@ class TestMessage(BaseTest):
         self.assertEqual(res.__class__.__name__, "Name")
         self.assertEqual(res.firstName, "kolo")
         self.assertEqual(res.lastName, "bok")
-

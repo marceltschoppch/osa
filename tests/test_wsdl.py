@@ -4,17 +4,14 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
-sys.path.append("../")
-
-import unittest
-import xml.etree.cElementTree as etree
+sys.path.insert(0, "../")
 from osa.wsdl import *
 from osa.method import *
 from osa.message import *
 from osa.xmltypes import *
+from tests.base import BaseTest
+import xml.etree.cElementTree as etree
+import unittest
 
 wsdl_url = 'test.wsdl'
 ns1 = "de.mpg.ipp.hgw.boz.gsoap.helloworld"
@@ -22,6 +19,7 @@ ns2 = "de.mpg.ipp.hgw.boz.gsoap.helloworld.types"
 
 
 class TestWSDL(unittest.TestCase):
+
     def test_reading(self):
         w = WSDLParser(wsdl_url)
         self.assertEqual(w.wsdl_url, wsdl_url)
@@ -141,7 +139,3 @@ class TestWSDL(unittest.TestCase):
             b = bs[n]
             self.assertTrue(s is b)
             self.assertEqual(s.location, "http://lxpowerboz:88/services/cpp/HelloWorldService")
-
-
-if __name__ == '__main__':
-    unittest.main()

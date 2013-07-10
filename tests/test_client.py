@@ -3,20 +3,16 @@
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
 # Licensed under GPLv3 or later, see the COPYING file.
 
+
 import os
 import sys
-# for x in sys.path:
-#     if x.find("osa") != -1:
-#         sys.path.remove(x)
-sys.path.append("../")
-
-import unittest
-# import xml.etree.cElementTree as etree
+sys.path.insert(0, "../")
 from osa.client import Client
 from osa.wsdl import *
 from osa.method import *
 from osa.xmltypes import *
-from . import BaseTest
+from tests.base import BaseTest
+import unittest
 if sys.version_info.major < 3:
     from urllib2 import urlopen, HTTPError, URLError
 else:

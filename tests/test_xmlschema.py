@@ -4,24 +4,23 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
-sys.path.append("../")
-
-import unittest
-import xml.etree.cElementTree as etree
+sys.path.insert(0, "../")
 from osa.xmlschema import *
 from osa.xmlparser import *
-from . import BaseTest
+from tests.base import BaseTest
+import xml.etree.cElementTree as etree
+import unittest
 
 
 class TestXMLSchema(BaseTest):
+
     def setUp(self):
         root = parse_qualified_from_url(self.test_files["schema.xml"])
         self.schema = XMLSchemaParser(root)
+
     def tearDown(self):
         self.schema = None
+
     def test_get_list_of_types(self):
         res = self.schema.get_list_of_defined_types()
         self.assertTrue("{vostok}Name" in res)
@@ -48,6 +47,7 @@ class TestXMLSchema(BaseTest):
         self.assertTrue("{sever}Car" in res)
         self.assertEqual(res["{sever}Car"].tag, "{%s}complexType" %xmlnamespace.NS_XSD)
         self.assertEqual(res["{sever}Car"].get("name"), "Car")
+
     def test_convert(self):
         xtypes = self.schema.get_list_of_defined_types()
         types = XMLSchemaParser.convert_xmltypes_to_python(xtypes)
@@ -97,5 +97,3 @@ class TestXMLSchema(BaseTest):
         self.assertTrue(hasattr(types["{sever}Car"], "weight"))
         self.assertEqual(types["{sever}Car"]._namespace, "sever")
         self.assertEqual(types["{sever}Car"].__class__.__name__, "ComplexTypeMeta")
-if __name__ == '__main__':
-    unittest.main()

@@ -143,8 +143,8 @@ class Message(object):
                         continue
                     else:
                         raise ValueError("Non-nillable parameter %s is not "
-                                         "present %name" %
-                                         setattr(p, name, val))
+                                         "present" % name)
+                setattr(p, name, val)
 
         # set default ns to save space
         # this does not work with xml qualified/unqualified, need a hack

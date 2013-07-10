@@ -4,17 +4,13 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
-sys.path.append("../")
-
-import unittest
-
-import xml.etree.cElementTree as etree
-
+sys.path.insert(0, "../")
 from osa.xmltypes import *
 from osa.xmlnamespace import *
+from tests.base import BaseTest
+import xml.etree.cElementTree as etree
+import unittest
+
 
 ns_test = 'test_namespace'
 
@@ -144,8 +140,9 @@ class TestClassSerializer(unittest.TestCase):
         element = element[0]
         element.set("{%s}type" %NS_XSI, 'Address')
 
-        XMLAny._types = {'Person':Person, 'Address':Address, 'Level4':Level4,
-                        'Level3':Level3, 'Level2': Level2, 'Level1':Level1}
+        XMLAny._types.update({'Person':Person, 'Address':Address,
+                              'Level4':Level4, 'Level3':Level3,
+                              'Level2': Level2, 'Level1':Level1})
 
         r = XMLAny().from_xml(element)
         self.assertTrue(isinstance(r, Address))
@@ -172,6 +169,3 @@ class TestClassSerializer(unittest.TestCase):
         b = Address.from_file(fname)
         self.assertEqual(b, a)
         self.assertTrue(b is not a)
-
-if __name__ == '__main__':
-    unittest.main()

@@ -4,17 +4,13 @@
 # Licensed under GPLv3 or later, see the COPYING file.
 
 import sys
-for x in sys.path:
-    if x.find("osa") != -1:
-        sys.path.remove(x)
-sys.path.append("../")
-
+sys.path.insert(0, "../")
 from osa.xmltypes import *
+from tests.base import BaseTest
 from datetime import datetime
-import unittest
 import xml.etree.cElementTree as etree
+import unittest
 
-from . import BaseTest
 
 ns_test = 'test_namespace'
 

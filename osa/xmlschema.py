@@ -53,7 +53,7 @@ class XMLSchemaParser(object):
         imports.extend(self.schema.findall('.//{%s}include' %
                                            xmlnamespace.NS_XSD))
         for schema in imports:
-            loc = schema.get('schemdaLocation', None)
+            loc = schema.get('schemaLocation', None)
             # basically says that types from that namespace will be used, no real
             # import, i.e. the real schema was defined already
             if loc is None:
