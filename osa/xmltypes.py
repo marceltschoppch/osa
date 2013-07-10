@@ -202,7 +202,7 @@ class XMLType(object):
                 Element to recover from.
         """
         # element is nill
-        if bool(element.get('nil')):
+        if element.get('{%s}nil' % xmlnamespace.NS_XSI, "false") == "true":
             return
 
         all_children_names = []
@@ -224,16 +224,16 @@ class XMLType(object):
                 if self._children[ind]['min'] != 0 and \
                    self._children[ind]['nillable'] is False:
                     raise ValueError("Non-nillable %s element is nil." % name)
+            # None, i.e. nillables, should also be placed here 
+            if self._children[ind]['max'].__class__.__name__ != "int" or\
+               self._children[ind]['max'] > 1:
+                current_value = getattr(self, name, None)
+                if current_value is None:
+                    current_value = []
+                    setattr(self, name, current_value)
+                current_value.append(subvalue)
             else:
-                if self._children[ind]['max'].__class__.__name__ != "int" or\
-                   self._children[ind]['max'] > 1:
-                    current_value = getattr(self, name, None)
-                    if current_value is None:
-                        current_value = []
-                        setattr(self, name, current_value)
-                    current_value.append(subvalue)
-                else:
-                    setattr(self, name, subvalue)
+                setattr(self, name, subvalue)
             del name, ind, inst
 
         # now all children were processed, so remove them to save memory

@@ -16,9 +16,9 @@ ns_test = 'test_namespace'
 
 Address = ComplexTypeMeta('Address', (), {
                 "_children":[
-                    {'name':"street", "type":XMLString, "min":1, "max": 1, "fullname":"street"},
+                    {'name':"street", "type":XMLString, "min":1, "max": 1, "nillable":False, "fullname":"street"},
                     {'name':"city", "type":XMLString, "min":1, "max": 1, "fullname":"city"},
-                    {'name':"zip", "type":XMLInteger, "min":1, "max": 1,"fullname":"zip"},
+                    {'name':"zip", "type":XMLInteger, "min":1, "max": 1, "nillable":True, "fullname":"zip"},
                     {'name':"since", "type":XMLDateTime, "min":0, "max": 1, "fullname":"since"},
                     {'name':"lattitude", "type":XMLDouble, "min":1, "max": 1, "fullname":"lattitude"},
                     {'name':"longitude", "type":XMLDouble, "min":1, "max": 1, "fullname":"longitude"},
@@ -60,7 +60,9 @@ Level1 = ComplexTypeMeta('Level1', (), {
                     {'name':"level4", "type":Level4, "min":0, "max": 'unbouneded',"fullname":"level4"},
                         ], "__doc__": "don't know"})
 
+
 class TestClassSerializer(unittest.TestCase):
+
     def test_simple_class(self):
         a = Address()
         a.street = '123 happy way'
@@ -153,6 +155,7 @@ class TestClassSerializer(unittest.TestCase):
         self.assertEqual(a.lattitude, r.lattitude)
         self.assertEqual(a.longitude, r.longitude)
         self.assertEqual(a.since, r.since)
+
     def test_tofrom_file(self):
         fname = "out.xml"
         a = Address()
@@ -169,3 +172,43 @@ class TestClassSerializer(unittest.TestCase):
         b = Address.from_file(fname)
         self.assertEqual(b, a)
         self.assertTrue(b is not a)
+
+    def test_nillable(self):
+        a = Address()
+        a.street = '123 happy way'
+        a.city = 'badtown'
+        a.zip = 32
+        a.lattitude = 4.3
+        a.longitude = 88.0
+
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+        self.assertEqual(5, len(element.getchildren()))
+
+        element[2].text=None  # zip is nillable 
+        element[2].set('{%s}nil' % xmlnamespace.NS_XSI, 'true')
+        r = Address().from_xml(element)
+        self.assertEqual(a.street, r.street)
+        self.assertEqual(a.city, r.city)
+        self.assertEqual(r.zip, None)
+        self.assertEqual(a.lattitude, r.lattitude)
+        self.assertEqual(a.longitude, r.longitude)
+        self.assertEqual(a.since, r.since)
+
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+        self.assertEqual(5, len(element.getchildren()))
+        element[0].text=None  # street is not nillable 
+        element[0].set('{%s}nil' % xmlnamespace.NS_XSI, 'true')
+        self.assertRaises(ValueError, Address().from_xml, element)
+
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+        element.clear()
+        self.assertEqual(0, len(element.getchildren()))
+        element.set('{%s}nil' % xmlnamespace.NS_XSI, 'true')
+        r = Address().from_xml(element)
+        self.assertTrue(r is None)
