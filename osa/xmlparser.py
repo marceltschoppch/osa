@@ -99,7 +99,7 @@ def parse_qualified_from_url(url, attr=None, wsdl_url=None):
                 except (HTTPError, ValueError):
                     pass
             if not page_handler:
-                raise ValueError("Can not found '%s'." % orig_url)
+                raise ValueError("'%s' not found." % orig_url)
 
     root = parse_qualified(page_handler, attr=attr)
     page_handler.close()
