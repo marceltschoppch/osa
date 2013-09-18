@@ -14,6 +14,11 @@ import unittest
 
 ns_test = 'test_namespace'
 
+Arr = ComplexTypeMeta('Arr', (), {
+                "_children":[
+                    {'name':"ch", "type":XMLInteger, "min":3, "max": 10, "nillable":False, "fullname":"ch"},
+                        ], "__doc__": "an info"})
+
 Address = ComplexTypeMeta('Address', (), {
                 "_children":[
                     {'name':"street", "type":XMLString, "min":1, "max": 1, "nillable":False, "fullname":"street"},
@@ -191,7 +196,7 @@ class TestClassSerializer(unittest.TestCase):
         r = Address().from_xml(element)
         self.assertEqual(a.street, r.street)
         self.assertEqual(a.city, r.city)
-        self.assertEqual(r.zip, None)
+        self.assertEqual(r.zip, 0) # bug 7 None)
         self.assertEqual(a.lattitude, r.lattitude)
         self.assertEqual(a.longitude, r.longitude)
         self.assertEqual(a.since, r.since)
@@ -202,7 +207,9 @@ class TestClassSerializer(unittest.TestCase):
         self.assertEqual(5, len(element.getchildren()))
         element[0].text=None  # street is not nillable 
         element[0].set('{%s}nil' % xmlnamespace.NS_XSI, 'true')
-        self.assertRaises(ValueError, Address().from_xml, element)
+        # bug 7
+        # self.assertNotRaises(ValueError, Address().from_xml, element)
+        Address().from_xml(element)
 
         element = etree.Element('test')
         a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
@@ -210,5 +217,33 @@ class TestClassSerializer(unittest.TestCase):
         element.clear()
         self.assertEqual(0, len(element.getchildren()))
         element.set('{%s}nil' % xmlnamespace.NS_XSI, 'true')
-        r = Address().from_xml(element)
-        self.assertTrue(r is None)
+        self.assertRaises(ValueError,  Address().from_xml, element)
+
+    def test_min_max_check(self):
+        a = Arr()
+        a.ch = [1,2,3,4]
+
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+
+        # working
+        r = Arr().from_xml(element)
+
+        # < minOccrus
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+        element.remove(element[-1])
+        element.remove(element[-1])
+        self.assertEqual(2, len(element.getchildren()))
+        self.assertRaises(ValueError,  Arr().from_xml, element)
+
+        # > maxOccurs
+        element = etree.Element('test')
+        a.to_xml( element, "{%s}%s" %(ns_test, "atach"))
+        element = element[0]
+        for i in range(7):
+            element.append(element[-1])
+        self.assertEqual(11, len(element.getchildren()))
+        self.assertRaises(ValueError,  Arr().from_xml, element)

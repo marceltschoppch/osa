@@ -27,6 +27,11 @@ class TestPrimitive(BaseTest):
         value = XMLString().from_xml(element)
         self.assertEqual(value, 'value')
 
+        #empty element test, bug 7
+        element.text = None
+        value = XMLString().from_xml(element)
+        self.assertEqual(value, "")
+
     def test_stringenumeration(self):
         XMLStringEnumeration._allowedValues = ["me", "you"]
         s1 = XMLStringEnumeration("me")
@@ -49,6 +54,12 @@ class TestPrimitive(BaseTest):
         element.text="he"
         self.assertRaises(ValueError, XMLStringEnumeration().from_xml, element)
 
+        #empty element test, bug 7
+        element.text = None
+        XMLStringEnumeration._allowedValues.append("")
+        value = XMLStringEnumeration().from_xml(element)
+        self.assertEqual(value, "")
+
     def test_datetime(self):
         d = XMLDateTime(datetime.now())
 
@@ -59,6 +70,11 @@ class TestPrimitive(BaseTest):
         self.assertEqual(element.text, d.value.isoformat())
         dt = XMLDateTime().from_xml(element)
         self.assertEqual(d.value, dt)
+
+        #empty element test, bug 7
+        element.text = None
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(1970,1,1))
 
     def test_date(self):
         x = datetime.now()
@@ -72,6 +88,11 @@ class TestPrimitive(BaseTest):
         self.assertEqual(element.text, d.value.isoformat())
         dt = XMLDate().from_xml(element)
         self.assertEqual(d.value, dt)
+         
+        #empty element test, bug 7
+        element.text = None
+        value = XMLDate().from_xml(element)
+        self.assertEqual(value, date(1970,1,1))
 
     def test_integer(self):
         integer = XMLInteger(12)
@@ -83,6 +104,11 @@ class TestPrimitive(BaseTest):
         self.assertEqual(element.text, '12')
         value = XMLInteger().from_xml(element)
         self.assertEqual(value, integer)
+
+        #empty element test, bug 7
+        element.text = None
+        value = XMLInteger().from_xml(element)
+        self.assertEqual(value, 0)
 
     def test_large_integer(self):
         integer = XMLInteger(128375873458473)
@@ -105,6 +131,11 @@ class TestPrimitive(BaseTest):
 
         f2 = XMLDouble().from_xml(element)
         self.assertEqual(f2, f)
+         
+        #empty element test, bug 7
+        element.text = None
+        value = XMLDouble().from_xml(element)
+        self.assertEqual(value, 0)
 
     def test_unicode(self):
         s = XMLString('\x34\x55\x65\x34')
@@ -145,7 +176,7 @@ class TestPrimitive(BaseTest):
         b = etree.Element('test')
         b.text = ''
         b = XMLBoolean().from_xml(b)
-        self.assertEqual(b, None)
+        self.assertEqual(b, False)
 
     def test_any(self):
         #test any from_xml, the other way is

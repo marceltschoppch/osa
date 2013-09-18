@@ -201,9 +201,11 @@ class XMLType(object):
             element : etree.Element
                 Element to recover from.
         """
+        # removed with bug 7, we do not check for this for primitives,
+        # so stay consistent for complex as well
         # element is nill
-        if element.get('{%s}nil' % xmlnamespace.NS_XSI, "false") == "true":
-            return
+        #if element.get('{%s}nil' % xmlnamespace.NS_XSI, "false") == "true":
+            #return
 
         all_children_names = []
         for child in self._children:
@@ -217,13 +219,15 @@ class XMLType(object):
 
             # used for conversion. for primitive types we receive back built-ins
             inst = self._children[ind]['type']()
+            # we do not distinguish xs:nil="true" explicitly here, this will have
+            # empty text in any case, this is not strict standard, but ...
             subvalue = inst.from_xml(subel)
 
-            # check conversion
-            if subvalue is None:
-                if self._children[ind]['min'] != 0 and \
-                   self._children[ind]['nillable'] is False:
-                    raise ValueError("Non-nillable %s element is nil." % name)
+            # removed for bug 7
+            #if subvalue is None:
+                #if self._children[ind]['min'] != 0 and \
+                   #self._children[ind]['nillable'] is False:
+                    #raise ValueError("Non-nillable %s element is nil." % name)
             # None, i.e. nillables, should also be placed here 
             if self._children[ind]['max'].__class__.__name__ != "int" or\
                self._children[ind]['max'] > 1:
@@ -238,6 +242,23 @@ class XMLType(object):
 
         # now all children were processed, so remove them to save memory
         element.clear()
+
+        # do a simplistic validation that all expected elements were present,
+        # this is not strict, but ...
+        for child in self._children:
+            val = getattr(self, child['name'], None)
+            numValues = 0
+            if val is not None:
+                numValues = 1
+            if isinstance(val, list):
+                numValues = len(val)
+            if numValues < child['min']:
+                raise ValueError("Number of elements '%s' %d is less then minOccurs %d."\
+                                 %(child['name'], numValues, child['min']))
+            if child['max'].__class__.__name__ == "int" and\
+               numValues > child['max']:
+                raise ValueError("Number of elements '%s' %d is more then maxOccurs %d."\
+                                 %(child['name'], numValues, child['max']))
 
         return self
 
@@ -369,7 +390,7 @@ class XMLString(XMLType, str):
         if element.text:
             return element.text
         else:
-            return None
+            return ""
 
 
 class XMLBase64Binary(XMLType, str):
@@ -382,7 +403,7 @@ class XMLBase64Binary(XMLType, str):
         if element.text:
             return base64.b64decode(element.text)
         else:
-            return None
+            return ""
 
 
 class XMLInteger(XMLType, int):
@@ -396,7 +417,7 @@ class XMLInteger(XMLType, int):
                 return int(element.text)
             except:
                 return long(element.text)
-        return None
+        return 0
 
 
 class XMLDouble(XMLType, float):
@@ -408,7 +429,7 @@ class XMLDouble(XMLType, float):
     def from_xml(self, element):
         if element.text:
             return float(element.text)
-        return None
+        return 0
 
 
 class XMLBoolean(XMLType, str):
@@ -423,7 +444,7 @@ class XMLBoolean(XMLType, str):
     def from_xml(cls, element):
         if element.text:
             return (element.text.lower() in ['true', '1'])
-        return None
+        return False
 
 
 class XMLAny(XMLType, str):
@@ -457,7 +478,7 @@ class XMLDecimal(XMLType, Decimal):
     def from_xml(self, element):
         if element.text:
             return Decimal(element.text)
-        return None
+        return Decimal(0)
 
 
 class XMLDate(XMLType):
@@ -475,7 +496,7 @@ class XMLDate(XMLType):
     def from_xml(self, element):
         """expect ISO formatted dates"""
         if not(element.text):
-            return None
+            return date(1970, 1, 1)
         text = element.text
         pos = text.find("UTC")
         if pos != -1:
@@ -499,7 +520,7 @@ class XMLDateTime(XMLType):
 
     def from_xml(self, element):
         if not(element.text):
-            return None
+            return datetime(1970, 1, 1)
         text = element.text
         pos = text.find("UTC")
         if pos != -1:
