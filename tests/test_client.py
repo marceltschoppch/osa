@@ -13,7 +13,7 @@ from osa.method import *
 from osa.xmltypes import *
 from tests.base import BaseTest
 import unittest
-if sys.version_info.major < 3:
+if sys.version_info[0] < 3:
     from urllib2 import urlopen, HTTPError, URLError
 else:
     from urllib.request import urlopen, HTTPError, URLError

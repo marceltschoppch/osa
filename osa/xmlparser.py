@@ -7,7 +7,7 @@
 """
 import xml.etree.cElementTree as etree
 import sys
-if sys.version_info.major < 3:
+if sys.version_info[0] < 3:
     from urllib2 import urlopen, HTTPError
 else:
     from urllib.request import urlopen, HTTPError

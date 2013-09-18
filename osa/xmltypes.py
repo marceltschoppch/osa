@@ -11,7 +11,7 @@ from datetime import date, datetime
 import xml.etree.cElementTree as etree
 import base64
 import sys
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     unicode = str
 
 
