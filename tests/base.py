@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # base.py - basic stuff for tests, part of osa.
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
-# Licensed under GPLv3 or later, see the COPYING file.
+# Licensed under LGPLv3 or later, see the COPYING file.
 
 import unittest
 import os

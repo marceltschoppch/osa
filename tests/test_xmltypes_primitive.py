@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # test_xmltypes_primitive.py - test serialization of primitive classes, part of osa.
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
-# Licensed under GPLv3 or later, see the COPYING file.
+# Licensed under LGPLv3 or later, see the COPYING file.
 
 import sys
 sys.path.insert(0, "../")

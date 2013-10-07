@@ -1,6 +1,6 @@
 # xmlschema.py - XMLSchemaParser class, part of osa.
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
-# Licensed under GPLv3 or later, see the COPYING file.
+# Licensed under LGPLv3 or later, see the COPYING file.
 
 '''
     Conversion of XML Schema types into Python classes.

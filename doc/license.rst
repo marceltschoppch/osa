@@ -4,8 +4,8 @@
 
 License
 -------
-I release the library under terms of `GPL`_. I borrowed some ideas from
-`suds`_, `soaplib`_ and `Scio`_ libraries. The first two are released
+I release the library under terms of `LGPL`_. I borrowed some ideas from
+`suds`_, `soaplib`_ and `Scio`_ libraries. The first two are also released
 under `LGPL`_. The last one has its own license, the text of which
 and the copyright are given below.
 

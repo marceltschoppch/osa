@@ -1,6 +1,6 @@
 # xmlnamespace.py - data for namespaces, part of osa.
 # Copyright 2013 Sergey Bozhenkov, boz at ipp.mpg.de
-# Licensed under GPLv3 or later, see the COPYING file.
+# Licensed under LGPLv3 or later, see the COPYING file.
 
 """
     A list of default namespaces and some simplistic help functions.
