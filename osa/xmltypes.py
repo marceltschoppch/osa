@@ -7,7 +7,7 @@
 """
 from . import xmlnamespace
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import xml.etree.cElementTree as etree
 import base64
 import sys
@@ -498,12 +498,12 @@ class XMLDate(XMLType):
         if not(element.text):
             return date(1970, 1, 1)
         text = element.text
-        pos = text.find("UTC")
-        if pos != -1:
-            text = text[:pos]
-        full = datetime.strptime(text, '%Y-%m-%d')
-
-        return full.date()
+        y, m, d = text.split("-")[:3]
+        y = int(y)
+        m = int(m)
+        d = int(d[:2])
+        # ignore time zone information here
+        return  date(y, m, d)
 
 
 class XMLDateTime(XMLType):
@@ -522,11 +522,36 @@ class XMLDateTime(XMLType):
         if not(element.text):
             return datetime(1970, 1, 1)
         text = element.text
-        pos = text.find("UTC")
-        if pos != -1:
-            text = text[:pos]
-        return datetime.strptime(text, '%Y-%m-%dT%H:%M:%S.%f')
-
+        # this way looks a bit slow, please complain if you need
+        datestr, timestr = text.split("T",1)
+        year, month, day = datestr.split("-")
+        year = int(year)
+        month = int(month)
+        day = int(day)
+        hour, minute, second = timestr.split(":", 2)
+        hour = int(hour)
+        minute = int(minute)
+        rest = second[2:]
+        second = int(second[:2])
+        fraction = 0 
+        if rest and rest[0] == ".":
+            # fraction of second
+            pos = len(rest)
+            for i in range(1,len(rest)):
+                if not rest[i].isdigit():
+                    pos = i
+                    break
+            fraction = int(float(rest[:pos])*1e6)
+            rest = rest[pos:]
+        value = datetime(year, month, day, hour, minute, second, fraction)
+        # time zone to UTC
+        if rest and (rest[0] == "+" or rest[0] == "-"):
+            zh, zm = rest.split(":",1)
+            zh = int(zh)
+            zm = int(rest[0]+zm[:2]) # add sign to minutes
+            delta = timedelta(hours = zh, minutes = zm)
+            value = value - delta
+        return value
 
 class XMLStringEnumeration(XMLType):
     _allowedValues = []
