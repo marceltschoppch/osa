@@ -76,6 +76,32 @@ class TestPrimitive(BaseTest):
         value = XMLDateTime().from_xml(element)
         self.assertEqual(value, datetime(1970,1,1))
 
+        element.text = "2012-01-31T10:00:00.538"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,31, 10, 0, 0, 538000))
+        element.text = "2012-01-30T10:00:00"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,30, 10, 0, 0))
+        element.text = "2012-01-20T10:00:00UTC"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,20, 10, 0, 0))
+        element.text = "2012-01-10T10:00:00Z"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,10, 10, 0, 0))
+        # with time zone - bug 9
+        element.text = "2012-01-31T10:00:00.538+02:30"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,31, 7, 30, 0, 538000))
+        element.text = "2012-01-30T01:00:00+01:30"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,29, 23, 30, 0))
+        element.text = "2012-01-31T10:00:00.538-02:30"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,31, 12, 30, 0, 538000))
+        element.text = "2012-01-31T10:00:00-01:00"
+        value = XMLDateTime().from_xml(element)
+        self.assertEqual(value, datetime(2012,01,31, 11, 00, 0))
+
     def test_date(self):
         x = datetime.now()
         x = x.date()
@@ -93,6 +119,20 @@ class TestPrimitive(BaseTest):
         element.text = None
         value = XMLDate().from_xml(element)
         self.assertEqual(value, date(1970,1,1))
+
+        element.text = "2013-01-31UTC"
+        value = XMLDate().from_xml(element)
+        self.assertEqual(value, date(2013,01,31))
+        element.text = "2013-02-11Z"
+        value = XMLDate().from_xml(element)
+        self.assertEqual(value, date(2013,02,11))
+        # with time zone - bug 9
+        element.text = "2012-01-31+06:00"
+        value = XMLDate().from_xml(element)
+        self.assertEqual(value, date(2012,01,31))
+        element.text = "2012-02-20-04:00"
+        value = XMLDate().from_xml(element)
+        self.assertEqual(value, date(2012,02,20))
 
     def test_integer(self):
         integer = XMLInteger(12)
