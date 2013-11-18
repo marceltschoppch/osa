@@ -43,4 +43,33 @@
   </element>
   <element name="Robot" type="tns:Person"/>
   <element name="Shish" />
+  <element name = "PersonDoc">
+      <annotation> bla </annotation>
+      <complexType>
+           <sequence>
+             <element name="age" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+             <element name="height" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+             <element name="weight" type="xsd:float" minOccurs="1" maxOccurs="1"/>
+             <element name="name" type="tns:Name" minOccurs="0" maxOccurs="1" nillable="true"/>
+             <element name="place" type="x:Address" minOccurs ="1" maxOccurs="10"/>
+             <element name="car" type="y:Car" minOccurs ="0" maxOccurs="5"/>
+             <element ref="tns:Comment"/>
+           </sequence>
+      </complexType>
+  </element>
+  <element name = "CounterDoc">
+      <annotation> bla </annotation>
+      <simpleType name="Counter">
+          <restriction base="int">
+              <minInclusive value="0"/>
+              <maxInclusive value="120"/>
+          </restriction>
+      </simpleType>
+  </element>
+  <element name="RobotDoc" type="tns:Person">
+      <annotation> bla </annotation>
+  </element>
+  <element name="ShishDoc" >
+      <annotation> bla </annotation>
+  </element>
 </schema>

@@ -184,10 +184,12 @@ class XMLSchemaParser(object):
         # complexContent.extension - complex class with parent
         # simpleType.restriction - e.g. string enumeration
         if element.tag == '{%s}element' % xmlnamespace.NS_XSD:
-            if len(element) > 0:
-                element[0].set('qualified', element.get('qualified', 0))
-                element = element[0]
-            else:
+            children = element.findall('./{%s}complexType' % xmlnamespace.NS_XSD)
+            children.extend(element.findall('./{%s}simpleType' % xmlnamespace.NS_XSD))
+            if len(children) == 1:
+                children[0].set('qualified', element.get('qualified', 0))
+                element = children[0]
+            elif len(children) == 0:
                 type = element.get('type', None)
                 if type is not None:
                     # alias
@@ -197,6 +199,9 @@ class XMLSchemaParser(object):
                     # empty class
                     XMLSchemaParser.create_empty_class(name, types)
                     return
+            else:
+                raise ValueError(' Wrong schema structure. Element has more than 1 '
+                        ' child specifying the class. Element: %s' % (name))
         if element.tag == '{%s}complexType' % xmlnamespace.NS_XSD:
             # complex class
             XMLSchemaParser.create_complex_class(name, element, xtypes, types)
