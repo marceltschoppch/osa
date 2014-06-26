@@ -72,4 +72,11 @@
   <element name="ShishDoc" >
       <annotation> bla </annotation>
   </element>
+  <element name = "EmptyCheck">
+      <complexType>
+       <sequence>
+         <element name="x" type="xsd:unsignedByte" minOccurs="1" maxOccurs="1"/>
+       </sequence>
+      </complexType>
+  </element>
 </schema>
