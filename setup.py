@@ -18,11 +18,12 @@ Topic :: Software Development :: Object Brokering""".split("\n")
 
 setup(
     name='osa',
-    version='0.1.6-p3',
+    version='0.1.6.6',
     description='Python fast/slim/convenient SOAP/WSDL client.',
     author="Sergey A. Bozhenkov",
     author_email='ba-serge@yandex.ru',
     url="https://bitbucket.org/sboz/osa",
+    download_url="https://bitbucket.org/sboz/osa/get/v0.1.6-p6.tar.gz",
     packages=["osa",],
     license="LGPLv3",
     classifiers=CLASSIFIERS,
