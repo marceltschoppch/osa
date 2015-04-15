@@ -594,6 +594,8 @@ primmap = {
     '{%s}positiveInteger' % xmlnamespace.NS_XSD: XMLInteger,
     'unsignedInt':                              XMLInteger,
     '{%s}unsignedInt' % xmlnamespace.NS_XSD:    XMLInteger,
+    'nonNegativeInteger':                       XMLInteger,
+    '{%s}nonNegativeInteger' % xmlnamespace.NS_XSD: XMLInteger,
     'short':                                    XMLInteger,
     '{%s}short' % xmlnamespace.NS_XSD:          XMLInteger,
     'byte':                                     XMLInteger,
