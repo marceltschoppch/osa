@@ -97,7 +97,10 @@ def tostr(self):
                 child_value = child_value + ',\n%s' % str(val)
             child_value = '[\n' + child_value[2:] + after
         elif child_value is not None:
-            child_value = str(child_value)
+            if isinstance(child_value, unicode):
+                child_value = child_value.encode('utf-8')
+            else:
+                child_value = str(child_value)
         else:
             child_value = "%s (%s)" % (str(None),
                                        get_local_type(child['type'].__name__))
@@ -228,7 +231,7 @@ class XMLType(object):
                 #if self._children[ind]['min'] != 0 and \
                    #self._children[ind]['nillable'] is False:
                     #raise ValueError("Non-nillable %s element is nil." % name)
-            # None, i.e. nillables, should also be placed here 
+            # None, i.e. nillables, should also be placed here
             if self._children[ind]['max'].__class__.__name__ != "int" or\
                self._children[ind]['max'] > 1:
                 current_value = getattr(self, name, None)
@@ -533,7 +536,7 @@ class XMLDateTime(XMLType):
         minute = int(minute)
         rest = second[2:]
         second = int(second[:2])
-        fraction = 0 
+        fraction = 0
         if rest and rest[0] == ".":
             # fraction of second
             pos = len(rest)
