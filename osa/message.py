@@ -139,7 +139,7 @@ class Message(object):
                         val = arg[counter]
                         counter += 1
                 if val is None:  # check if nillable
-                    if child["min"] == 0:
+                    if child["min"] == 0 or child["nillable"]:
                         continue
                     else:
                         raise ValueError("Non-nillable parameter %s is not "
