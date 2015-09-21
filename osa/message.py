@@ -139,11 +139,12 @@ class Message(object):
                         val = arg[counter]
                         counter += 1
                 if val is None:  # check if nillable
-                    if child["min"] == 0 or child["nillable"]:
-                        continue
-                    else:
-                        raise ValueError("Non-nillable parameter %s is not "
-                                         "present" % name)
+                    if not child.get("nillable", False):
+                        if child["min"] == 0:
+                            continue
+                        else:
+                            raise ValueError("Non-nillable parameter %s is "
+                                             "not present" % name)
                 setattr(p, name, val)
 
         # set default ns to save space

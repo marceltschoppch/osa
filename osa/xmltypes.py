@@ -162,25 +162,35 @@ class XMLType(object):
                 n = 1
                 val = [val, ]
 
-            if n < child["min"]:
+            if n < child["min"] and not child["nillable"]:
                 raise ValueError("Number of values for %s is less than "
                                  "min_occurs: %s" % (name, str(val)))
             if child["max"].__class__.__name__ == "int" and n > child["max"]:
                 raise ValueError("Number of values for %s is more than max_occurs: %s" % (name, str(val)))
 
-            if n == 0:
-                continue  # only nillables can get so far
-
-            # conversion
-            for single in val:
-                if not(hasattr(single, "to_xml")):
-                    single = child['type'](single)
-                single.to_xml(element, full_child_name)
+            if val is None and child["nillable"]:
+                # represent nil value
+                nil = etree.SubElement(element, full_child_name)
+                nil.set("{%s}nil" % xmlnamespace.NS_XSI, "true")
                 if child["type"] is XMLAny:
                     # append type information
                     element[-1].set("{%s}type" % xmlnamespace.NS_XSI,
-                                    "{%s}%s" % (single._namespace,
-                                                single.__class__.__name__))
+                                    "{%s}%s" % (val._namespace,
+                                                val.__class__.__name__))
+            else:
+                if n == 0:
+                    continue  # only nillables can get so far
+
+                # conversion
+                for single in val:
+                    if not(hasattr(single, "to_xml")):
+                        single = child['type'](single)
+                    single.to_xml(element, full_child_name)
+                    if child["type"] is XMLAny:
+                        # append type information
+                        element[-1].set("{%s}type" % xmlnamespace.NS_XSI,
+                                        "{%s}%s" % (single._namespace,
+                                                    single.__class__.__name__))
                 # try:
                     # single.to_xml(element, full_name)
                     # if child["type"] is XMLAny:
