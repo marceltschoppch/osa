@@ -393,7 +393,7 @@ class ComplexTypeMeta(type):
 # the following is a modified copy from soaplib library
 
 
-class XMLString(XMLType, str):
+class XMLString(XMLType, unicode):
 
     def to_xml(self, parent, name):
         element = etree.SubElement(parent, name)
