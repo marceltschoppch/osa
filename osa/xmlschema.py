@@ -422,7 +422,7 @@ class XMLSchemaParser(object):
                 full_child_name = child_name
                 # class member names!
                 child_name = xmlnamespace.get_local_name(child_name)
-                if qualified and full_child_name.find('}') == -1:
+                if qualified == 'qualified' and full_child_name.find('}') == -1:
                     full_child_name = '{%s}%s' % (cls_ns, full_child_name)
                 children.append({'name': child_name, 'type': type,
                                  'min': minOccurs, 'max': maxOccurs,
