@@ -97,7 +97,7 @@ class Method(object):
 
         # http stuff
         request = Request(self.location, text_msg,
-                          {'Content-Type': 'text/xml',
+                          {'Content-Type': 'text/xml; charset=utf-8',
                            'SOAPAction': self.action})
         del text_msg
 
