@@ -10,11 +10,15 @@ from . import xmltypes
 from . import xmlparser
 
 
-class XMLSchemaParser(object):
+class _IncompleteSentinel(object):
+    pass
+
+
+class XMLSchemaParserBase(object):
     '''
         Parser to get types from an XML Schema.
     '''
-    def __init__(self, root, wsdl_url=None):
+    def __init__(self, root, wsdl_url=None, parser_ctx=None):
         '''
             Initialize parser.
 
@@ -32,6 +36,8 @@ class XMLSchemaParser(object):
                 Url the wsdl comes from, can be used to expand schema
                 references.
         '''
+        if parser_ctx is None:
+            parser_ctx = {}
         if wsdl_url is None:
             wsdl_url = ''
         self.wsdl_url = wsdl_url
@@ -65,12 +71,16 @@ class XMLSchemaParser(object):
                        xmlnamespace.NS_XSI):
                 continue
             # try getting the schema
-            parser = XMLSchemaParser(xmlparser.parse_qualified_from_url(loc, wsdl_url=wsdl_url), wsdl_url=wsdl_url)
-            # check if want to change the schema namespace
-            ns = schema.get('namespace', None)
-            if ns is not None:
-                parser.tns = ns
-            self.imported.append(parser)
+            if loc not in parser_ctx:
+                parser_ctx[loc] = _IncompleteSentinel  # A parser isn't yet ready for this url but soon will be.
+                parser = XMLSchemaParserBase(xmlparser.parse_qualified_from_url(loc, wsdl_url=wsdl_url), wsdl_url=wsdl_url, parser_ctx=parser_ctx)
+                parser_ctx[loc] = parser
+
+                # check if want to change the schema namespace
+                ns = schema.get('namespace', None)
+                if ns is not None:
+                    parser.tns = ns
+                self.imported.append(parser)
 
     def generate_classes(self):
         '''
@@ -240,10 +250,13 @@ class XMLSchemaParser(object):
         elif name in xmltypes.primmap:
             cl = xmltypes.primmap[name]
         elif name in types:
+            if types[name] is _IncompleteSentinel:
+                return None
             cl = types[name]
         elif not name in xtypes:
             raise ValueError(' Class %s not found in anywhere' % (name))
         else:
+            types[name] = _IncompleteSentinel  # Not yet created, but will be soon.
             XMLSchemaParser.create_type(name, xtypes[name], xtypes, types)
             cl = types[name]
         return cl
@@ -374,6 +387,13 @@ class XMLSchemaParser(object):
                 parent = XMLSchemaParser.get_type_by_name(parent_name, xtypes, types)
                 parents.append(parent)
 
+        exts = element.findall('./{%s}simpleContent/{%s}extension' % (xmlnamespace.NS_XSD, xmlnamespace.NS_XSD))
+        if exts is not None:
+            for ext in exts:
+                parent_name = ext.get('base', None)
+                parent = XMLSchemaParser.get_type_by_name(parent_name, xtypes, types)
+                parents.append(parent)
+
         # find sequence/choice/all
         seq = None
         for str in ('sequence', 'all', 'choice'):
@@ -439,3 +459,11 @@ class XMLSchemaParser(object):
                                        {'_children': children, '__doc__': doc,
                                         '_namespace': cls_ns})
         types[name] = cls
+
+
+class XMLSchemaParser(XMLSchemaParserBase):
+    '''
+        Parser to get types from an XML Schema.
+    '''
+    def __init__(self, root, wsdl_url=None):
+        XMLSchemaParserBase.__init__(self, root, wsdl_url, None)

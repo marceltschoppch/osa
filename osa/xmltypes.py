@@ -94,7 +94,10 @@ def tostr(self):
                 after = '\n...' + after
             child_value = ''
             for val in tmp[:stop]:
-                child_value = child_value + ',\n%s' % str(val)
+                if isinstance(val, unicode):
+                    child_value = child_value + ',\n%s' % val.encode('utf-8')
+                else:
+                    child_value = child_value + ',\n%s' % str(val)
             child_value = '[\n' + child_value[2:] + after
         elif child_value is not None:
             if isinstance(child_value, unicode):
