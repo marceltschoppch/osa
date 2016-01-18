@@ -15,6 +15,13 @@ if sys.version_info[0] > 2:
     unicode = str
 
 
+class AttributeWrapper(object):
+    """ Wrapper class to wrap an attribute value into an element like object.
+    """
+    def __init__(self, value):
+        self.text = value
+
+
 def get_local_type(xmltype):
     """
         Simplifies types names, e.g. XMLInteger is
@@ -80,6 +87,7 @@ def tostr(self):
         if child['max'].__class__.__name__ != "int" or child['max'] > 1:
             array = '[]'
         child_value = getattr(self, child_name, None)
+        child_attrs = getattr(self, child_name + '__attrs', None)
         many = False
         if len(array) and isinstance(child_value, (list, tuple)):
             many = True
@@ -93,11 +101,13 @@ def tostr(self):
                 stop = 10
                 after = '\n...' + after
             child_value = ''
-            for val in tmp[:stop]:
+            for i, val in enumerate(tmp[:stop]):
                 if isinstance(val, unicode):
                     child_value = child_value + ',\n%s' % val.encode('utf-8')
                 else:
                     child_value = child_value + ',\n%s' % str(val)
+                if child_attrs and len(child_attrs) > i:
+                    child_value += ' (%r)' % child_attrs[i]
             child_value = '[\n' + child_value[2:] + after
         elif child_value is not None:
             if isinstance(child_value, unicode):
@@ -237,6 +247,13 @@ class XMLType(object):
             inst = self._children[ind]['type']()
             # we do not distinguish xs:nil="true" explicitly here, this will have
             # empty text in any case, this is not strict standard, but ...
+
+            attrs = {}
+            if hasattr(inst, '_attributes') and inst._attributes:
+                for attr_name, attr_type in inst._attributes.iteritems():
+                    pseudo_element = AttributeWrapper(subel.get(attr_name))
+                    attrs[attr_name] = attr_type().from_xml(pseudo_element)
+
             subvalue = inst.from_xml(subel)
 
             # removed for bug 7
@@ -248,12 +265,18 @@ class XMLType(object):
             if self._children[ind]['max'].__class__.__name__ != "int" or\
                self._children[ind]['max'] > 1:
                 current_value = getattr(self, name, None)
+                current_attrs = getattr(self, name + '__attrs', None)
                 if current_value is None:
                     current_value = []
+                    current_attrs = []
                     setattr(self, name, current_value)
+                    setattr(self, name + '__attrs', current_attrs)
                 current_value.append(subvalue)
+                current_attrs.append(attrs)
             else:
                 setattr(self, name, subvalue)
+                if attrs:
+                    setattr(subvalue, name + '__attrs', attrs)
             del name, ind, inst
 
         # now all children were processed, so remove them to save memory
@@ -346,6 +369,8 @@ class ComplexTypeMeta(type):
         # list of children, even if empty, must be always present
         if not "_children" in attributes:
             attributes["_children"] = []
+        if not "_attributes" in attributes:
+            attributes["_attributes"] = {}
 
         # create dictionary for initializing class arguments
         clsDict = {}

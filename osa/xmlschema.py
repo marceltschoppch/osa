@@ -451,13 +451,18 @@ class XMLSchemaParserBase(object):
         # get doc
         doc = XMLSchemaParser.get_doc(element)
 
+        # find attributes
+        attrs = {}
+        for attr in element.findall('.//{%s}%s' % (xmlnamespace.NS_XSD, 'attribute')):
+            attrs[attr.get('name')] = XMLSchemaParser.get_type_by_name(attr.get('type'), xtypes, types)
+
         # create new class
         # I choose to give short names to classes, i.e. without
         # a namespace, even though Python can manage full names as well
         cls_name = xmlnamespace.get_local_name(name)
         cls = xmltypes.ComplexTypeMeta(cls_name, parents,
                                        {'_children': children, '__doc__': doc,
-                                        '_namespace': cls_ns})
+                                        '_namespace': cls_ns, '_attributes': attrs})
         types[name] = cls
 
 
